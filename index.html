@@ -1,0 +1,1305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<!-- Home screen: icon, full-screen launch, name -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CHROMA">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" sizes="180x180" href="chroma-icon.png">
+<link rel="icon" type="image/png" href="chroma-icon.png">
+<title>CHROMA 11</title>
+<style>
+:root{
+  --chrome:#ffffff;--sheet:#ffffff;--soft:#f2f3f5;--line:#e5e7eb;--ink:#14171c;--muted:#6b7280;--faint:#9ca3af;
+  --accent:#2f6fe4;--accentInk:#ffffff;--lens:#1b1f25;
+  --safeT:env(safe-area-inset-top,0px);--safeB:env(safe-area-inset-bottom,0px);
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sheetMax:40vh;
+}
+html.dark{--chrome:#14181d;--sheet:#181c22;--soft:#222830;--line:#2a3038;--ink:#eef0f2;--muted:#9aa3ad;--faint:#6b7480;--accent:#5b8ef0;--lens:#0d1014}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--chrome);overscroll-behavior:none}
+body{color:var(--ink);font:14px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit;margin:0}
+button{touch-action:manipulation;cursor:pointer;background:none;border:0;padding:0}
+[hidden]{display:none!important}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block}
+
+.app{position:fixed;inset:0;display:flex;flex-direction:column;padding-top:var(--safeT)}
+
+/* ---------- palette: the whole screen ---------- */
+.palette{flex:1 1 auto;min-height:120px;display:flex;flex-direction:column}
+.palette.cols{flex-direction:row}
+.bar{position:relative;flex:1 1 0;min-height:0;min-width:0;display:flex;align-items:center;gap:8px;padding:0 10px 0 22px;background:var(--c);color:var(--k);cursor:pointer;transition:background-color .12s linear,flex-grow .2s ease;outline:none;user-select:none;-webkit-user-select:none}
+.palette.cols .bar{flex-direction:column;justify-content:flex-end;align-items:center;padding:0 6px 28px}
+.bar.active{flex-grow:1.35}
+.bar .tx{flex:1 1 auto;min-width:0}
+.palette.cols .bar .tx{flex:none;text-align:center}
+.bar .hx{display:block;font-weight:650;font-size:17px;letter-spacing:.02em;font-feature-settings:"tnum"}
+.bar .meta{display:none;margin-top:1px;font:11px var(--mono);opacity:.72;white-space:nowrap}
+.bar.active .meta{display:block}
+.bar.active:before{content:"";position:absolute;left:9px;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:var(--k)}
+.palette.cols .bar.active:before{left:50%;top:auto;bottom:14px;margin:0 0 0 -2.5px}
+.bar .ic{width:38px;height:38px;display:grid;place-items:center;border-radius:10px;color:var(--k);opacity:.42;flex:none}
+.bar .ep{display:none;position:absolute;top:9px;right:10px;padding:3px 6px;border-radius:6px;background:rgba(0,0,0,.20);color:var(--k);font:700 9px var(--mono);letter-spacing:.04em;pointer-events:none}
+.bar.endpoint-start .ep,.bar.endpoint-end .ep{display:block}
+.palette.cols .bar .ep{right:auto;left:50%;transform:translateX(-50%)}
+.bar .ic svg.i{width:19px;height:19px}
+.bar .ic.on{opacity:1}
+.bar .cp{display:none}
+.bar.active .cp{display:grid}
+.palette.cols .bar .icons{display:flex;flex-direction:column;align-items:center;margin-bottom:8px}
+.icons{display:flex;align-items:center}
+
+/* ---------- bottom sheet ---------- */
+.sheet{flex:none;background:var(--sheet);border-top:1px solid var(--line);border-radius:14px 14px 0 0;margin-top:-14px;position:relative;z-index:2;box-shadow:0 -6px 24px rgba(0,0,0,.08);display:flex;flex-direction:column;max-height:var(--sheetMax)}
+.sheetHead{flex:none;display:flex;align-items:center;gap:8px;height:42px;padding:0 6px 0 16px}
+.sheetHead strong{font-size:13px;font-weight:650;margin-right:auto;white-space:nowrap}
+.xbtn{width:34px;height:34px;display:grid;place-items:center;border-radius:9px;color:var(--muted)}
+.sheetBody{flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:0 16px 12px}
+.pane{display:none}.pane.on{display:block}
+
+.seg{display:flex;background:var(--soft);border-radius:9px;padding:2px}
+.seg button{height:26px;padding:0 9px;border-radius:7px;font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.seg button.on{background:var(--sheet);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+/* color pane */
+.edTop{display:flex;align-items:center;gap:6px}
+.chip{width:34px;height:34px;flex:none;border-radius:9px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.hexIn{flex:1 1 auto;min-width:0;height:34px;border:1px solid var(--line);border-radius:9px;background:var(--soft);padding:0 10px;font:600 15px var(--mono);letter-spacing:.04em;text-transform:uppercase;outline:none}
+.hexIn:focus{border-color:var(--accent)}
+.tbtn{height:34px;min-width:34px;padding:0 9px;display:flex;align-items:center;justify-content:center;gap:5px;border:1px solid var(--line);border-radius:9px;font-size:12px;font-weight:600;color:var(--ink);position:relative;flex:none}
+.tbtn svg.i{width:17px;height:17px}
+.tbtn.on{background:var(--ink);border-color:var(--ink);color:var(--sheet)}
+.tbtn input[type=color]{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0}
+.sl{display:grid;grid-template-columns:52px minmax(0,1fr) 38px;align-items:center;gap:10px;margin-top:11px}
+.sl label{font-size:11.5px;color:var(--muted)}
+.sl output{font:12px var(--mono);text-align:right}
+.grad{-webkit-appearance:none;appearance:none;width:100%;height:16px;margin:0;border-radius:8px;background:var(--g,#ccc);touch-action:pan-y;outline:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.grad::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:var(--thumb,#888);border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.35)}
+.grad::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--thumb,#888);border:3px solid #fff}
+
+/* wheel pane */
+.wheelBox{display:flex;justify-content:center;padding:2px 0 4px}
+#wheel{display:block;touch-action:none;cursor:crosshair}
+
+/* relationship pane */
+.modes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.mode{height:30px;border:1px solid var(--line);border-radius:9px;font-size:12px;font-weight:600;color:var(--muted)}
+.mode.on{border-color:var(--ink);color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.betweenTools{margin-top:8px;padding:8px 9px;border:1px solid var(--line);border-radius:10px;background:var(--soft)}
+.betweenPair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.betweenEnd{display:flex;align-items:center;gap:6px;min-width:0}
+.betweenEnd i{width:23px;height:23px;display:block;flex:none;border-radius:6px;background:var(--line);box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.betweenEnd b{font:700 10px var(--mono);color:var(--muted)}
+.betweenEnd span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:10px var(--mono);color:var(--ink)}
+.betweenFoot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:7px}
+.betweenFoot small{font-size:10.5px;line-height:1.3;color:var(--muted)}
+.betweenFoot button{flex:none;padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:var(--sheet);font-size:10.5px;font-weight:650}
+.modeTools{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+.modeTools label,.profileGrid label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--muted)}
+.modeTools select,.profileGrid select{width:100%;height:32px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--soft);font-size:12px;color:var(--ink);min-width:0}
+.modeTools .ctl{grid-column:1/-1}
+.modeTools input[type="range"]{width:100%;margin:5px 0 0;accent-color:var(--accent);touch-action:pan-y}
+.modeTools output{font:10px var(--mono);color:var(--ink)}
+.profileGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:10px;padding-top:9px;border-top:1px solid var(--line)}
+.profileGrid label{min-width:0}
+.profileGrid select{font-size:11px;padding:0 5px}
+.theorySearch{display:flex;gap:7px;align-items:center;margin-bottom:8px}
+.theorySearch input{width:100%;height:36px;border:1px solid var(--line);border-radius:9px;background:var(--soft);padding:0 10px;font-size:13px;outline:none}
+.theorySearch input:focus{border-color:var(--accent)}
+.theoryFilters{display:flex;gap:5px;overflow-x:auto;padding:0 0 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.theoryFilters::-webkit-scrollbar{display:none}
+.theoryFilter{flex:none;padding:6px 9px;border:1px solid var(--line);border-radius:99px;font-size:10.5px;color:var(--muted);white-space:nowrap}
+.theoryFilter.on{background:var(--ink);border-color:var(--ink);color:var(--sheet)}
+.theoryMeta{font:10px var(--mono);color:var(--muted);margin:0 0 7px}
+.theoryList{display:flex;flex-direction:column;gap:6px}
+.theoryItem{padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--sheet)}
+.theoryItemHead{display:flex;align-items:center;gap:8px}
+.theoryItemHead b{font-size:12px;font-weight:650}
+.theoryItemHead small{margin-left:auto;font:9.5px var(--mono);color:var(--muted);white-space:nowrap}
+.theoryItem p{font-size:11.5px;line-height:1.4;color:var(--muted);margin:5px 0 0}
+.theoryItemFoot{display:flex;justify-content:flex-end;margin-top:6px}
+.theoryTry{padding:5px 9px;border:1px solid var(--line);border-radius:7px;font-size:10.5px;font-weight:650}
+.theoryTry:active{background:var(--soft)}
+.theoryEmpty{padding:18px 8px;text-align:center;color:var(--muted);font-size:12px}
+.row{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.row>span{font-size:12px;color:var(--muted)}
+.stepper{display:flex;align-items:center;gap:4px}
+.stepper button{width:34px;height:34px;border:1px solid var(--line);border-radius:50%;font-size:18px;line-height:1;color:var(--ink)}
+.stepper button:disabled{opacity:.3}
+.stepper output{min-width:28px;text-align:center;font-weight:650}
+.steer{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 18px;margin-top:6px}
+.ctl label{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted)}
+.ctl output{font:11px var(--mono);color:var(--ink)}
+.ctl input{width:100%;height:22px;margin:0;accent-color:var(--accent);touch-action:pan-y}
+.ctl.full{grid-column:1/-1}
+
+/* menu pane */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;height:68px;border-radius:11px;background:var(--soft);font-size:11px;font-weight:600;color:var(--ink);text-align:center;line-height:1.1}
+.tile svg.i{width:21px;height:21px}
+
+/* saved / export / details */
+.lib{display:flex;flex-direction:column;gap:7px}
+.libRow{display:flex;align-items:center;gap:8px}
+.libStrip{flex:1 1 auto;display:flex;height:34px;border-radius:8px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.libStrip span{flex:1 1 0}
+.libDel{height:34px;min-width:34px;padding:0 8px;border:1px solid var(--line);border-radius:8px;font-size:12px;color:var(--muted)}
+.libDel.armed{background:#b4473d;border-color:#b4473d;color:#fff}
+.note{margin:8px 0 0;color:var(--muted);font-size:11.5px;line-height:1.45}
+.btnRow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.btn{height:36px;border:1px solid var(--line);border-radius:9px;font-size:12px;font-weight:600}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accentInk)}
+.pre{margin:10px 0 0;padding:9px 11px;border-radius:9px;background:var(--soft);font:11px/1.55 var(--mono);color:var(--muted);white-space:pre;overflow-x:auto}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.stat{padding:7px 8px;border-radius:9px;background:var(--soft)}
+.stat .k{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:14px;font-weight:700;margin-top:1px;white-space:nowrap}
+.pairs{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:2px;margin-top:10px}
+.pc{display:flex;flex-direction:column;align-items:center;justify-content:center;height:40px;border-radius:5px;min-width:0}
+.pc b{font:800 14px/1 -apple-system,sans-serif}
+.pc i{font:10px/1 var(--mono);font-style:normal;margin-top:3px;opacity:.85}
+.pc.no b{opacity:.5}.pc.no i{opacity:.45;text-decoration:line-through}
+
+/* ---------- toolbar ---------- */
+.toolbar{flex:none;display:flex;align-items:center;justify-content:space-between;height:calc(56px + var(--safeB));padding:0 8px var(--safeB);background:var(--chrome);border-top:1px solid var(--line);position:relative;z-index:3}
+.tb{width:42px;height:42px;display:grid;place-items:center;border-radius:11px;color:var(--ink)}
+.tb:disabled{color:var(--faint);opacity:.6}
+.tb.on{background:var(--soft)}
+.gen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:44px;padding:0 18px;border-radius:12px;color:var(--ink)}
+.gen span{font-size:15px;font-weight:650}
+.gen small{font-size:10.5px;color:var(--muted);margin-top:1px}
+.gen:active,.tb:active{background:var(--soft)}
+.tgroup{display:flex;gap:2px}
+
+/* ---------- image picker (full screen) ---------- */
+.picker{position:fixed;inset:0;z-index:30;background:var(--chrome);display:flex;flex-direction:column;padding-top:var(--safeT)}
+.pkHead{flex:none;display:flex;align-items:center;justify-content:space-between;height:50px;padding:0 6px;border-bottom:1px solid var(--line)}
+.pkHead strong{font-size:15px;font-weight:650}
+.pkUse{height:36px;padding:0 12px;font-size:15px;font-weight:650;color:var(--accent)}
+.pkUse:disabled{color:var(--faint)}
+.pkStage{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;background:var(--soft);position:relative}
+#pkView{display:block;touch-action:none;box-shadow:0 2px 14px rgba(0,0,0,.18)}
+.pkEmpty{text-align:center;max-width:290px;padding:20px}
+.pkLow{flex:none;padding:10px 14px calc(10px + var(--safeB));display:flex;flex-direction:column;gap:9px;border-top:1px solid var(--line)}
+.pkStrip{display:flex;height:50px;border-radius:12px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.pkStrip button{flex:1 1 0;position:relative}
+.pkStrip button.on:after{content:"";position:absolute;left:50%;top:50%;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:var(--k)}
+.pkInfo{display:flex;align-items:center;gap:8px;height:18px;font:12px var(--mono);color:var(--muted)}
+.pkInfo b{color:var(--ink);font-weight:650}
+.vers{display:flex;gap:6px;align-items:center}
+.vchips{flex:1 1 auto;min-width:0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.vchips::-webkit-scrollbar{display:none}
+.vchip{flex:none;padding:5px 7px 6px;border:1px solid var(--line);border-radius:9px;text-align:left}
+.vchip b{display:block;font-size:10.5px;font-weight:650;color:var(--muted);margin-bottom:4px;white-space:nowrap}
+.vchip i{display:flex;width:68px;height:10px;border-radius:3px;overflow:hidden}
+.vchip i span{flex:1 1 0}
+.vchip.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.vchip.on b{color:var(--ink)}
+.pkCount{display:flex;align-items:center;justify-content:space-between}
+.pkCount>span{font-size:12px;color:var(--muted)}
+.pkTools{display:flex;gap:6px}
+
+.toast{position:fixed;z-index:40;left:50%;top:calc(14px + var(--safeT));transform:translate(-50%,-8px);opacity:0;pointer-events:none;padding:8px 14px;border-radius:99px;background:var(--ink);color:var(--chrome);font-size:12px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.25);transition:.18s;white-space:nowrap}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.shot{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(10,12,15,.92);padding:20px}
+.shot.show{display:flex}
+.shot img{max-width:92vw;max-height:80vh;border-radius:10px;-webkit-touch-callout:default}
+.shot p{margin:0;color:#cfd4da;font-size:12px}
+#imageFile{display:none}
+@media(min-width:700px){.sheet{margin-left:auto;margin-right:auto;width:min(100%,560px);border:1px solid var(--line);border-bottom:0}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></symbol>
+  <symbol id="i-wheel" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="7.5" r="1.7"/><circle cx="16.2" cy="14.6" r="1.7"/><circle cx="7.8" cy="14.6" r="1.7"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18.5" cy="12" r="1.2"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></symbol>
+  <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 7.6-1.8"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-9.2-8.7A4.9 4.9 0 0 1 12 6.6a4.9 4.9 0 0 1 9.2 4.7C19 15.6 12 20 12 20z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="4" rx="1.5"/><rect x="4" y="11" width="16" height="4" rx="1.5"/><rect x="4" y="17" width="10" height="3" rx="1.2"/></symbol>
+  <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 14v6h14v-6"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2.5"/><circle cx="12" cy="13.5" r="3.5"/><path d="m8.5 7 1.5-3h4l1.5 3"/></symbol>
+  <symbol id="i-contrast" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22z"/><path d="M4 5.5V22M8 7h8M8 11h8"/></symbol>
+</svg>
+
+<div class="app">
+  <main class="palette" id="palette" aria-label="Palette"></main>
+
+  <section class="sheet" id="sheet" hidden>
+    <div class="sheetHead">
+      <strong id="sheetTitle">Color</strong>
+      <div class="seg linkSeg" id="linkSeg" aria-label="When you move a color, the others">
+        <button data-link="harmony">Harmony</button><button data-link="together">Together</button><button data-link="stay">Stay</button>
+      </div>
+      <button class="xbtn" id="sheetClose" aria-label="Close panel"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="sheetBody">
+      <div class="pane" id="pane-color">
+        <div class="edTop">
+          <span class="chip" id="edChip"></span>
+          <input class="hexIn" id="hexIn" maxlength="7" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="HEX code">
+          <button class="tbtn" id="edCopy" aria-label="Copy HEX"><svg class="i"><use href="#i-copy"/></svg></button>
+          <button class="tbtn" id="edLock" aria-label="Lock color"><svg class="i"><use href="#i-unlock"/></svg></button>
+          <label class="tbtn" aria-label="System color picker">◉<input type="color" id="edPick"></label>
+        </div>
+        <div class="sl"><label for="sL">Light</label><input class="grad" id="sL" type="range" min="3" max="98" step="1"><output id="sLOut"></output></div>
+        <div class="sl"><label for="sC">Chroma</label><input class="grad" id="sC" type="range" min="0" max="32" step="0.5"><output id="sCOut"></output></div>
+        <div class="sl"><label for="sH">Hue</label><input class="grad" id="sH" type="range" min="0" max="359" step="1"><output id="sHOut"></output></div>
+      </div>
+
+      <div class="pane" id="pane-wheel"><div class="wheelBox"><canvas id="wheel" width="600" height="600" aria-label="Color wheel: angle is hue, distance is chroma. Drag a dot, or tap to move the selected color."></canvas></div></div>
+
+      <div class="pane" id="pane-rel">
+        <div class="modes" id="modes">
+          <button class="mode" data-mode="analogous">Analog</button><button class="mode" data-mode="complementary">Complement</button><button class="mode" data-mode="split">Split</button><button class="mode" data-mode="triadic">Triad</button>
+          <button class="mode" data-mode="tetradic">Tetrad</button><button class="mode" data-mode="square">Square</button><button class="mode" data-mode="mono">Mono</button><button class="mode" data-mode="free">Free</button>
+          <button class="mode" data-mode="between">Between</button>
+        </div>
+        <div class="betweenTools" id="betweenTools" hidden>
+          <div class="betweenPair">
+            <div class="betweenEnd"><i id="betweenAChip"></i><b>A</b><span id="betweenAHex">Not set</span></div>
+            <div class="betweenEnd"><i id="betweenBChip"></i><b>B</b><span id="betweenBHex">Not set</span></div>
+          </div>
+          <div class="betweenFoot"><small id="betweenStatus">Tap two colors in the palette above.</small><button type="button" id="betweenPick">Pick endpoints</button></div>
+        </div>
+        <div class="modeTools" id="modeTools">
+          <label for="modeSelect">More relationships
+            <select id="modeSelect">
+              <optgroup label="Hue geometry">
+                <option value="diadic">Diadic / custom interval</option><option value="narrow">Narrow analogous</option><option value="extended">Extended analogous</option><option value="nearComplement">Near complementary</option><option value="doubleComplement">Double complementary</option><option value="rectangle">Rectangular tetradic</option><option value="splitTriad">Split triadic</option><option value="asymTriad">Asymmetric triad</option>
+              </optgroup>
+              <optgroup label="Interpolation">
+                <option value="between">Between two colors</option>
+              </optgroup>
+              <optgroup label="Multi-hue structures">
+                <option value="pentadic">Pentadic · 5</option><option value="hexadic">Hexadic · 6</option><option value="heptadic">Heptadic · 7</option><option value="octadic">Octadic · 8</option><option value="equidistant">Equidistant · palette size</option><option value="cluster">Hue cluster</option><option value="opposed">Opposed clusters</option><option value="multiCluster">Multi-cluster</option><option value="interrupted">Interrupted sequence</option><option value="spiral">Hue spiral</option><option value="spectral">Spectrum arc</option><option value="discord">Controlled discord</option>
+              </optgroup>
+              <optgroup label="Classic">
+                <option value="analogous">Analogous</option><option value="complementary">Complementary</option><option value="split">Split complementary</option><option value="triadic">Triadic</option><option value="tetradic">Tetradic</option><option value="square">Square</option><option value="mono">Monochromatic</option><option value="free">Freeform</option>
+              </optgroup>
+            </select>
+          </label>
+          <label for="interval">Hue interval <output id="intervalOut">120°</output><input id="interval" type="range" min="15" max="180" value="120"></label>
+          <label for="splitAngle">Split width <output id="splitAngleOut">30°</output><input id="splitAngle" type="range" min="5" max="60" value="30"></label>
+        </div>
+        <div class="row"><span>Colors</span><div class="stepper"><button id="cMinus" aria-label="Fewer colors">−</button><output id="cOut">5</output><button id="cPlus" aria-label="More colors">+</button></div></div>
+        <div class="steer" id="steer">
+          <div class="ctl"><label for="tension">Tension <output id="tensionOut"></output></label><input id="tension" type="range" min="0" max="100" value="18"></div>
+          <div class="ctl"><label for="spacing">Hue spread <output id="spacingOut"></output></label><input id="spacing" type="range" min="0" max="100" value="50"></div>
+          <div class="ctl"><label for="tone">Tone range <output id="toneOut"></output></label><input id="tone" type="range" min="0" max="100" value="55"></div>
+          <div class="ctl"><label for="chroma">Intensity <output id="chromaOut"></output></label><input id="chroma" type="range" min="0" max="100" value="68"></div>
+          <div class="ctl full"><label for="temperature">Temperature <output id="temperatureOut"></output></label><input id="temperature" type="range" min="-100" max="100" value="0"></div>
+        </div>
+        <div class="profileGrid" id="profileGrid">
+          <label for="lightProfile">Lightness
+            <select id="lightProfile"><option value="balanced">Balanced</option><option value="equal">Equal lightness</option><option value="high">High-key</option><option value="low">Low-key</option><option value="compressed">Compressed</option><option value="expanded">Expanded</option><option value="alternating">Alternating</option><option value="staircase">Value staircase</option></select>
+          </label>
+          <label for="chromaProfile">Chroma
+            <select id="chromaProfile"><option value="balanced">Balanced</option><option value="equal">Equal chroma</option><option value="muted">Muted</option><option value="vibrant">Vibrant</option><option value="staircase">Chroma staircase</option><option value="accent">Accent</option><option value="punctuation">Punctuation</option><option value="broken">Broken color</option><option value="contaminated">Complement contamination</option></select>
+          </label>
+          <label for="composition">Roles
+            <select id="composition"><option value="even">Even</option><option value="dominant">Dominant + accent</option><option value="punctuation">Color punctuation</option><option value="echo">Chromatic echo</option><option value="warmCool">Warm / cool balance</option></select>
+          </label>
+        </div>
+      </div>
+
+      <div class="pane" id="pane-menu">
+        <div class="tiles">
+          <button class="tile" data-act="image"><svg class="i"><use href="#i-image"/></svg>From image</button>
+          <button class="tile" data-act="save"><svg class="i"><use href="#i-heart"/></svg>Save</button>
+          <button class="tile" data-act="saved"><svg class="i"><use href="#i-list"/></svg>Saved</button>
+          <button class="tile" data-act="export"><svg class="i"><use href="#i-export"/></svg>Export</button>
+          <button class="tile" data-act="snap"><svg class="i"><use href="#i-camera"/></svg>Snapshot</button>
+          <button class="tile" data-act="details"><svg class="i"><use href="#i-contrast"/></svg>Contrast</button>
+          <button class="tile" data-act="unlock"><svg class="i"><use href="#i-unlock"/></svg>Unlock all</button>
+          <button class="tile" data-act="theme"><svg class="i"><use href="#i-moon"/></svg><span id="themeLabel">Dark UI</span></button>
+          <button class="tile" data-act="theory"><svg class="i"><use href="#i-book"/></svg>Color theory</button>
+        </div>
+      </div>
+
+      <div class="pane" id="pane-saved"><div class="lib" id="lib"></div></div>
+
+      <div class="pane" id="pane-export">
+        <div class="btnRow"><button class="btn" id="copyCSS">Copy CSS</button><button class="btn" id="copyHex">Copy HEX</button><button class="btn" id="exportCSS">CSS file</button></div>
+        <div class="pre" id="cssPreview"></div>
+      </div>
+
+      <div class="pane" id="pane-details">
+        <div class="stats">
+          <div class="stat"><div class="k">Fit</div><div class="v" id="fitValue">–</div></div>
+          <div class="stat"><div class="k">Hues</div><div class="v" id="charValue">–</div></div>
+          <div class="stat"><div class="k">Contrast</div><div class="v" id="contrastValue">–</div></div>
+          <div class="stat"><div class="k">Temp</div><div class="v" id="tempValue">–</div></div>
+        </div>
+        <div id="pairs"></div>
+        <p class="note">Each cell is the column color as text on the row color. 4.5+ reads as body text, 3+ as large text.</p>
+      </div>
+      <div class="pane" id="pane-theory">
+        <div class="theorySearch"><input id="theorySearch" type="search" placeholder="Search color theory…" autocomplete="off" spellcheck="false" aria-label="Search color theory"></div>
+        <div class="theoryFilters" id="theoryFilters"></div>
+        <p class="theoryMeta" id="theoryMeta"></p>
+        <div class="theoryList" id="theoryList"></div>
+      </div>
+    </div>
+  </section>
+
+  <nav class="toolbar">
+    <div class="tgroup">
+      <button class="tb" id="undo" aria-label="Undo" disabled><svg class="i"><use href="#i-undo"/></svg></button>
+      <button class="tb" id="redo" aria-label="Redo" disabled><svg class="i"><use href="#i-redo"/></svg></button>
+    </div>
+    <button class="gen" id="generate"><span>Generate</span><small id="genMode">Complementary</small></button>
+    <div class="tgroup">
+      <button class="tb" id="btnWheel" data-pane="wheel" aria-label="Color wheel"><svg class="i"><use href="#i-wheel"/></svg></button>
+      <button class="tb" id="btnRel" data-pane="rel" aria-label="Relationship and steering"><svg class="i"><use href="#i-sliders"/></svg></button>
+      <button class="tb" id="btnMenu" data-pane="menu" aria-label="More"><svg class="i"><use href="#i-more"/></svg></button>
+    </div>
+  </nav>
+</div>
+
+<div class="picker" id="picker" hidden>
+  <div class="pkHead">
+    <button class="xbtn" id="pkClose" aria-label="Close image picker"><svg class="i"><use href="#i-x"/></svg></button>
+    <strong>Image picker</strong>
+    <button class="pkUse" id="pkUse" disabled>Use</button>
+  </div>
+  <div class="pkStage" id="pkStage">
+    <canvas id="pkView" hidden aria-label="Image. Drag a circle to pick its color; tap to move the selected circle."></canvas>
+    <div class="pkEmpty" id="pkEmpty"><button class="btn primary" id="pkChoose" style="padding:0 18px">Choose an image</button><p class="note">The palette is built from the image's own pixels, in several versions. Drag any circle to fine-tune its color.</p></div>
+  </div>
+  <div class="pkLow" id="pkLow" hidden>
+    <div class="pkStrip" id="pkStrip"></div>
+    <div class="pkInfo"><b id="pkHex">—</b><span id="pkPos"></span></div>
+    <div class="vers"><div class="vchips" id="vchips"></div><button class="tbtn" id="pkMore" aria-label="New versions"><svg class="i"><use href="#i-refresh"/></svg></button></div>
+    <div class="pkCount"><span>Colors</span><div class="pkTools"><button class="tbtn" id="pkChange">Change image</button><div class="stepper"><button id="pkMinus" aria-label="Fewer colors">−</button><output id="pkN">5</output><button id="pkPlus" aria-label="More colors">+</button></div></div></div>
+  </div>
+</div>
+
+<input id="imageFile" type="file" accept="image/*">
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="shot" id="shot"><img id="shotImg" alt="Palette snapshot"><p>Long-press to save · tap outside to close</p></div>
+
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const TAU=Math.PI*2,CMAX=.32,MINN=3,MAXN=10;
+const STORE='chroma.v9.state',OLDSTORE='chroma.v7.state',LIB='chroma.v7.library',UI='chroma.v9.ui';
+const controls=['tension','spacing','tone','chroma','temperature','interval','splitAngle'];
+const profileControls=['lightProfile','chromaProfile','composition'];
+const MODE_NAMES={analogous:'Analogous',complementary:'Complementary',split:'Split complementary',triadic:'Triadic',tetradic:'Tetradic',square:'Square',mono:'Monochromatic',free:'Freeform',between:'Between two colors',diadic:'Diadic',narrow:'Narrow analogous',extended:'Extended analogous',nearComplement:'Near complementary',doubleComplement:'Double complementary',rectangle:'Rectangular tetradic',splitTriad:'Split triadic',asymTriad:'Asymmetric triad',pentadic:'Pentadic',hexadic:'Hexadic',heptadic:'Heptadic',octadic:'Octadic',equidistant:'Equidistant',cluster:'Hue cluster',opposed:'Opposed clusters',multiCluster:'Multi-cluster',interrupted:'Interrupted sequence',spiral:'Hue spiral',spectral:'Spectrum arc',discord:'Controlled discord'};
+let seed=94621,colors=[],active=0,anchor=-1,count=5,mode='complementary',link='harmony',toastTimer=null,editingSlider=null,gesture=null,gestureTimer=null;
+let betweenA=null,betweenB=null,betweenPickA=-1,betweenPickB=-1,betweenPicking=false;
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function mod(v,m){return ((v%m)+m)%m;}
+function pad(n){return String(n).padStart(2,'0');}
+function circularDiff(a,b){return ((a-b+540)%360)-180;}
+function rand(i,k){const x=Math.sin((seed+1)*12.9898+(i+1)*78.233+(k+1)*37.719)*43758.5453;return x-Math.floor(x);}
+function hexToRgb(hex){const s=String(hex).replace('#','');if(!/^[0-9a-f]{6}$/i.test(s))return null;return [0,2,4].map(i=>parseInt(s.slice(i,i+2),16)/255);}
+function rgbToHex(rgb){return '#'+rgb.map(v=>Math.round(clamp(v,0,1)*255).toString(16).padStart(2,'0')).join('').toUpperCase();}
+function srgbToLinear(v){return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4);}
+function linearToSrgb(v){return v<=.0031308?12.92*v:1.055*Math.pow(Math.max(0,v),1/2.4)-.055;}
+function rgbToOklab(rgb){
+  const r=srgbToLinear(rgb[0]),g=srgbToLinear(rgb[1]),b=srgbToLinear(rgb[2]);
+  const l=Math.cbrt(.4122214708*r+.5363328373*g+.0514459929*b),m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b),s=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);
+  return [.2104542553*l+.793617785*m-.0040720468*s,1.9779984951*l-2.428592205*m+.4505937099*s,.0259040371*l+.7827717662*m-.808675766*s];
+}
+function oklabToRgb(L,a,b){
+  const l=Math.pow(L+.3963377774*a+.2158037573*b,3),m=Math.pow(L-.1055613458*a-.0638541728*b,3),s=Math.pow(L-.0894841775*a-1.291485548*b,3);
+  return [4.0767416621*l-3.3077115913*m+.2309699292*s,-1.2684380046*l+2.6097574011*m-.3413193965*s,-.0041960863*l-.7034186147*m+1.707614701*s].map(linearToSrgb);
+}
+function rgbToLch(rgb){const lab=rgbToOklab(rgb),C=Math.hypot(lab[1],lab[2]);return {L:lab[0],C,h:mod(Math.atan2(lab[2],lab[1])*180/Math.PI,360)};}
+function lchToRgb(L,C,h){const rad=h*Math.PI/180;return oklabToRgb(L,C*Math.cos(rad),C*Math.sin(rad));}
+function lchToHex(L,C,h){
+  let rgb=lchToRgb(L,C,h);
+  if(rgb.some(v=>v<0||v>1)){let lo=0,hi=C;for(let n=0;n<24;n++){const mid=(lo+hi)/2,test=lchToRgb(L,mid,h);if(test.every(v=>v>=0&&v<=1))lo=mid;else hi=mid;}rgb=lchToRgb(L,lo,h);}
+  return rgbToHex(rgb);
+}
+function parseColor(hex){const rgb=hexToRgb(hex);if(!rgb)return null;return {hex:rgbToHex(rgb),...rgbToLch(rgb)};}
+// Straight RGB-channel interpolation matches the familiar endpoint-to-endpoint ramp.
+function interpolateRgbHex(hexA,hexB,t){
+  if(t<=0)return hexA;if(t>=1)return hexB;
+  const a=hexToRgb(hexA),b=hexToRgb(hexB);
+  return rgbToHex(a.map((v,i)=>v+(b[i]-v)*t));
+}
+function rgbToHsl(rgb){const r=rgb[0],g=rgb[1],b=rgb[2],mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn,L=(mx+mn)/2;let h=0,s=0;if(d){s=L>.5?d/(2-mx-mn):d/(mx+mn);if(mx===r)h=(g-b)/d+(g<b?6:0);else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;}return [mod(h,360),s,L];}
+function hslToRgb(h,s,l){h=mod(h,360)/360;if(!s)return [l,l,l];const q=l<.5?l*(1+s):l+s-l*s,p=2*l-q;const hue=t=>{if(t<0)t++;if(t>1)t--;if(t<1/6)return p+(q-p)*6*t;if(t<1/2)return q;if(t<2/3)return p+(q-p)*(2/3-t)*6;return p;};return [hue(h+1/3),hue(h),hue(h-1/3)];}
+function luminance(hex){const rgb=hexToRgb(hex).map(srgbToLinear);return .2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];}
+function contrast(a,b){const x=luminance(a),y=luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
+function warmScore(h){return Math.cos((h-45)*Math.PI/180);}
+function inkFor(hex){return contrast(hex,'#14171c')>=contrast(hex,'#fffaf2')?'#14171c':'#fffaf2';}
+function offsetsFor(mode,n,spread,interval,splitAngle){
+  const out=[],vary=(spread-50)/50,analogStep=9+spread*.34;
+  const iv=clamp(Number(interval)||120,15,180),split=clamp(Number(splitAngle)||30,5,60);
+  const sequence=(step)=>Array.from({length:n},(_,i)=>mod(i*step,360));
+  for(let i=0;i<n;i++){
+    let a=0;
+    if(mode==='analogous')a=(i-(n-1)/2)*analogStep;
+    else if(mode==='narrow')a=(i-(n-1)/2)*(2.5+spread*.13);
+    else if(mode==='extended')a=(i-(n-1)/2)*(16+spread*.62);
+    else if(mode==='complementary')a=(i%2)*180;
+    else if(mode==='diadic')a=(i%2)*iv;
+    else if(mode==='nearComplement')a=(i%2)*Math.min(180,iv);
+    else if(mode==='split')a=[0,180-split,180+split][i%3];
+    else if(mode==='triadic')a=[0,120+vary*12,240-vary*12][i%3];
+    else if(mode==='splitTriad')a=[0,105+vary*10,255-vary*10][i%3];
+    else if(mode==='asymTriad')a=[0,84+vary*8,226-vary*9][i%3];
+    else if(mode==='tetradic')a=[0,60+vary*15,180,240+vary*15][i%4];
+    else if(mode==='doubleComplement')a=[0,iv,180,mod(180+iv,360)][i%4];
+    else if(mode==='rectangle')a=[0,iv,180,mod(180+iv,360)][i%4];
+    else if(mode==='square')a=[0,90+vary*12,180,270-vary*12][i%4];
+    else if(mode==='pentadic')a=sequence(72)[i];
+    else if(mode==='hexadic')a=sequence(60)[i];
+    else if(mode==='heptadic')a=sequence(360/7)[i];
+    else if(mode==='octadic')a=sequence(45)[i];
+    else if(mode==='equidistant')a=sequence(360/n)[i];
+    else if(mode==='cluster')a=(i-(n-1)/2)*(3+spread*.12)+(rand(i,31)-.5)*(spread*.3);
+    else if(mode==='opposed')a=(i<Math.ceil(n/2)?0:180)+(i%(Math.ceil(n/2))-(Math.ceil(n/2)-1)/2)*(5+spread*.2);
+    else if(mode==='multiCluster'){const center=[0,120,240][i%3],rank=Math.floor(i/3);a=center+(rank-(Math.ceil(n/3)-1)/2)*(4+spread*.18);}
+    else if(mode==='interrupted'){const step=360/(n+1),slot=i>=Math.floor(n/2)?i+1:i;a=slot*step;}
+    else if(mode==='spiral')a=(i/(Math.max(1,n-1)))*(270+spread*.7);
+    else if(mode==='spectral')a=(i/(Math.max(1,n-1)))*270;
+    else if(mode==='discord')a=rand(i,41)*360;
+    else if(mode==='mono')a=0;
+    else a=rand(i,9)*360;
+    out.push(mod(a,360));
+  }
+  return out;
+}
+function circularMean(degrees){let x=0,y=0;degrees.forEach(d=>{x+=Math.cos(d*Math.PI/180);y+=Math.sin(d*Math.PI/180);});return mod(Math.atan2(y,x)*180/Math.PI,360);}
+function baseFromPins(pins,offsets,temp){if(!pins.length)return rand(0,88)*360;return circularMean(pins.map(p=>mod(p.color.h-offsets[p.index]-temp,360)));}
+function settings(){return {tension:+$('tension').value,spacing:+$('spacing').value,tone:+$('tone').value,chroma:+$('chroma').value,temperature:+$('temperature').value,interval:+$('interval').value,splitAngle:+$('splitAngle').value,lightProfile:$('lightProfile').value,chromaProfile:$('chromaProfile').value,composition:$('composition').value};}
+
+function pad(n){return String(n).padStart(2,'0');}
+
+/* ================= generator ================= */
+// Locked colors never change. The "anchor" is the color you just moved: in Harmony mode it
+// steers the others but stays unlocked, so the next color you touch becomes the new anchor.
+function generate(advance){
+  // Between mode is a deterministic perceptual ramp anchored by two chosen palette colors.
+  if(advance&&mode!=='between'){seed=(seed*9301+49297)%233280+1;anchor=-1;}
+  const n=count,s=settings();
+  if(mode==='between'){
+    if(!betweenA||!betweenB){render();return;}
+    const previous=colors.slice(),a=betweenA.hex,b=betweenB.hex;
+    colors=Array.from({length:n},(_,i)=>{
+      const t=n<=1?0:i/(n-1),isEnd=i===0||i===n-1;
+      const prior=previous[i],locked=!!(prior&&prior.locked);
+      const hex=(locked&&!isEnd)?prior.hex:(i===0?a:i===n-1?b:interpolateRgbHex(a,b,t));
+      return {...parseColor(hex),locked};
+    });
+    if(active>=n)active=n-1;anchor=-1;render();return;
+  }
+  while(colors.length<n)colors.push({...parseColor('#7C9A99'),locked:false});
+  if(colors.length>n)colors=colors.slice(0,n);
+  if(active>=n)active=n-1;if(anchor>=n)anchor=-1;
+  const held=(c,i)=>c.locked||i===anchor;
+  const offsets=offsetsFor(mode,n,s.spacing,s.interval,s.splitAngle),pins=colors.map((c,i)=>held(c,i)?{color:c,index:i}:null).filter(Boolean),temp=s.temperature*.28;
+  const base=baseFromPins(pins,offsets,temp),toneRange=.04+(s.tone/100)*.42,chromaBase=.018+(s.chroma/100)*.19;
+  colors=colors.map((old,i)=>{
+    if(held(old,i))return old;
+    let h=mod(base+offsets[i]+temp+(rand(i,1)-.5)*(s.tension*.62),360);
+    if(mode==='free')h=mod(base+offsets[i]+temp+(rand(i,2)-.5)*(s.tension*.35),360);
+    let position=n===1?0:(i/(n-1)-.5)*2;
+    if(mode==='spiral')position=(i/(Math.max(1,n-1)))*2-1;
+    let L=.69+position*toneRange*.48+(rand(i,3)-.5)*.045;
+    if(s.lightProfile==='equal')L=.66;
+    else if(s.lightProfile==='high')L=.78+position*toneRange*.24;
+    else if(s.lightProfile==='low')L=.36+position*toneRange*.24;
+    else if(s.lightProfile==='compressed')L=.64+position*toneRange*.18;
+    else if(s.lightProfile==='expanded')L=.60+position*toneRange*.78;
+    else if(s.lightProfile==='alternating')L=.62+(i%2?1:-1)*toneRange*.48;
+    else if(s.lightProfile==='staircase')L=.30+(i/Math.max(1,n-1))*.62;
+    if(mode==='spiral'&&s.lightProfile==='balanced')L=.36+(i/Math.max(1,n-1))*.52;
+    if(s.lightProfile!=='equal')L+= (rand(i,3)-.5)*.025;
+    L=clamp(L,.08,.94);
+    let C=clamp(chromaBase+(rand(i,4)-.5)*(.018+s.tension*.00035),.012,.27);
+    if(s.chromaProfile==='equal')C=clamp(chromaBase,.012,.27);
+    else if(s.chromaProfile==='muted')C*=.48;
+    else if(s.chromaProfile==='vibrant')C*=1.38;
+    else if(s.chromaProfile==='staircase')C=.025+(i/Math.max(1,n-1))*.205;
+    else if(s.chromaProfile==='accent')C=i===n-1?.255:Math.min(.075,C*.55);
+    else if(s.chromaProfile==='punctuation')C=i===n-1?.29:Math.min(.035,C*.32);
+    else if(s.chromaProfile==='broken'){C*=.78+rand(i,5)*.55;h=mod(h+(rand(i,6)-.5)*(7+s.tension*.25),360);}
+    else if(s.chromaProfile==='contaminated'){h=mod(h+circularDiff(base+180,h)*.11,360);C*=.82;}
+    if(s.composition==='dominant'){C*=i===n-1?1.32:.66;}
+    else if(s.composition==='punctuation'){C=i===n-1?.29:Math.min(.04,C*.38);}
+    else if(s.composition==='echo'&&i%3===2){h=mod(base+offsets[Math.max(0,i-1)],360);C*=.82;}
+    else if(s.composition==='warmCool'){const warm=warmScore(h);L=clamp(L+warm*.035,.08,.94);}
+    return {...parseColor(lchToHex(L,C,h)),locked:false};
+  });
+  render();
+}
+
+/* ================= moving one color moves the others ================= */
+function beginGesture(i){gesture={i,snap:colors.map(c=>({L:c.L,C:c.C,h:c.h}))};}
+function touchGesture(i){if(!gesture||gesture.i!==i)beginGesture(i);clearTimeout(gestureTimer);gestureTimer=setTimeout(()=>{gesture=null;},900);}
+function endGesture(){gesture=null;clearTimeout(gestureTimer);}
+// L,C,h are the intended values (before gamut clipping) so repeated drags don't drift.
+function editColor(i,L,C,h){
+  touchGesture(i);
+  const old=colors[i];colors[i]={...parseColor(lchToHex(L,C,h)),locked:old.locked};active=i;
+  if(mode==='between'){
+    if(i===0)betweenA={hex:colors[i].hex};
+    else if(i===colors.length-1)betweenB={hex:colors[i].hex};
+    else colors[i].locked=true;
+    generate(false);return;
+  }
+  if(link==='harmony'){anchor=i;generate(false);return;}
+  if(link==='together'){
+    const s0=gesture.snap[i],dL=L-s0.L,dh=circularDiff(h,s0.h),ratio=s0.C>.015?C/s0.C:null,dC=C-s0.C;
+    colors.forEach((c,j)=>{
+      if(j===i||c.locked)return;const sj=gesture.snap[j];
+      const L2=clamp(sj.L+dL,.03,.98),C2=clamp(ratio!==null?sj.C*ratio:sj.C+dC,0,CMAX),h2=mod(sj.h+dh,360);
+      colors[j]={...parseColor(lchToHex(L2,C2,h2)),locked:false};
+    });
+  }
+  render();
+}
+function setHex(i,hex){const p=parseColor(hex);if(!p)return false;beginGesture(i);editColor(i,p.L,p.C,p.h);endGesture();return true;}
+
+/* ================= palette bars ================= */
+const svg=id=>'<svg class="i"><use href="#i-'+id+'"/></svg>';
+function makeBar(i){
+  const b=document.createElement('div');b.className='bar';b.setAttribute('role','button');b.tabIndex=0;
+  b.innerHTML='<div class="tx"><span class="hx"></span><span class="meta"></span></div><span class="ep"></span><div class="icons"><button class="ic cp" aria-label="Copy HEX">'+svg('copy')+'</button><button class="ic lk"></button></div>';
+  b.querySelector('.cp').addEventListener('click',e=>{e.stopPropagation();copyText(colors[i].hex,'Copied '+colors[i].hex);});
+  b.querySelector('.lk').addEventListener('click',e=>{e.stopPropagation();toggleLock(i);});
+  b.addEventListener('click',()=>tapBar(i));
+  b.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();tapBar(i);}});
+  return b;
+}
+function tapBar(i){
+  if(mode==='between'&&betweenPicking){chooseBetweenEndpoint(i);return;}
+  if(i===active&&sheetPane==='color'){closeSheet();return;}
+  active=i;if(!sheetPane||sheetPane==='menu'||sheetPane==='saved'||sheetPane==='export')openSheet('color');
+  render();
+}
+function chooseBetweenEndpoint(i){
+  const picked=colors[i];if(!picked)return;
+  if(betweenPickA<0){betweenA={hex:picked.hex};betweenPickA=i;toast('Start color A selected · choose B');}
+  else{
+    if(i===betweenPickA){toast('Choose a different color for B');return;}
+    betweenB={hex:picked.hex};betweenPickB=i;betweenPicking=false;active=0;
+    generate(false);toast('Gradient created · adjust Colors to add or remove steps');
+  }
+  updateBetweenUI();renderPalette();renderSheet();scheduleSave();
+}
+function beginBetweenPick(){
+  betweenA=null;betweenB=null;betweenPickA=-1;betweenPickB=-1;betweenPicking=true;
+  updateBetweenUI();renderPalette();renderSheet();scheduleSave();toast('Tap any palette color for A');
+}
+function updateBetweenUI(){
+  const on=mode==='between';
+  $('betweenTools').hidden=!on;$('modeTools').hidden=on;$('steer').hidden=on;$('profileGrid').hidden=on;
+  if(!on)return;
+  $('betweenAChip').style.background=betweenA?betweenA.hex:'var(--line)';
+  $('betweenBChip').style.background=betweenB?betweenB.hex:'var(--line)';
+  $('betweenAHex').textContent=betweenA?betweenA.hex:'Choose A';
+  $('betweenBHex').textContent=betweenB?betweenB.hex:'Choose B';
+  $('betweenPick').textContent=betweenPicking?'Reset picks':'Choose endpoints';
+  $('betweenStatus').textContent=betweenPicking?(betweenPickA<0?'Tap any palette color above for A.':'A selected. Tap a different palette color for B.'):(betweenA&&betweenB?count+' colors · linear RGB blend':'Choose two colors from the palette above.');
+}
+function paletteLayout(){$('palette').classList.toggle('cols',innerWidth>innerHeight&&innerWidth>=700);}
+function renderPalette(){
+  const root=$('palette'),n=colors.length;
+  if(root.children.length!==n){root.innerHTML='';for(let i=0;i<n;i++)root.appendChild(makeBar(i));}
+  colors.forEach((c,i)=>{
+    const b=root.children[i];
+    let ep='';
+    if(mode==='between'){
+      if(betweenPicking){if(i===betweenPickA)ep='A';else if(i===betweenPickB)ep='B';}
+      else if(betweenA&&betweenB){if(i===0)ep='A';else if(i===n-1)ep='B';}
+    }
+    b.className='bar'+(i===active?' active':'')+(ep==='A'?' endpoint-start':ep==='B'?' endpoint-end':'');
+    b.querySelector('.ep').textContent=ep;
+    b.style.setProperty('--c',c.hex);b.style.setProperty('--k',inkFor(c.hex));
+    b.querySelector('.hx').textContent=c.hex.slice(1);
+    b.querySelector('.meta').textContent='L '+Math.round(c.L*100)+'  C '+c.C.toFixed(2).replace(/^0/,'')+'  H '+Math.round(c.h)+'°';
+    const lk=b.querySelector('.lk');lk.innerHTML=svg(c.locked?'lock':'unlock');lk.classList.toggle('on',c.locked);lk.setAttribute('aria-label',(c.locked?'Unlock':'Lock')+' color '+(i+1));
+    b.setAttribute('aria-label','Color '+(i+1)+' '+c.hex+(c.locked?', locked':''));
+  });
+}
+function toggleLock(i){colors[i].locked=!colors[i].locked;if(colors[i].locked&&anchor===i)anchor=-1;render();toast(colors[i].locked?'Locked':'Unlocked');}
+
+/* ================= bottom sheet ================= */
+let sheetPane=null;
+const TITLES={color:'Color',wheel:'Wheel',rel:'Relationship',menu:'More',saved:'Saved palettes',export:'Export',details:'Contrast',theory:'Color theory'};
+function openSheet(p){
+  sheetPane=p;$('sheet').hidden=false;$('sheetTitle').textContent=TITLES[p];
+  document.querySelectorAll('.pane').forEach(el=>el.classList.toggle('on',el.id==='pane-'+p));
+  $('linkSeg').hidden=!(p==='color'||p==='wheel');
+  document.querySelectorAll('.toolbar .tb[data-pane]').forEach(b=>b.classList.toggle('on',b.dataset.pane===p));
+  if(p==='saved')renderLib();
+  if(p==='theory')renderTheory();
+  renderSheet();requestAnimationFrame(()=>{drawWheel();});
+}
+function closeSheet(){sheetPane=null;$('sheet').hidden=true;document.querySelectorAll('.toolbar .tb').forEach(b=>b.classList.remove('on'));}
+$('sheetClose').addEventListener('click',closeSheet);
+document.querySelectorAll('.toolbar .tb[data-pane]').forEach(b=>b.addEventListener('click',()=>{if(sheetPane===b.dataset.pane)closeSheet();else openSheet(b.dataset.pane);}));
+function setLink(v){link=v;document.querySelectorAll('#linkSeg button').forEach(b=>b.classList.toggle('on',b.dataset.link===v));anchor=-1;saveUI();}
+document.querySelectorAll('#linkSeg button').forEach(b=>b.addEventListener('click',()=>{setLink(b.dataset.link);toast({harmony:'Others follow the relationship',together:'Others move by the same amount',stay:'Only the selected color changes'}[link]);}));
+
+/* color pane */
+function ramp(fn,steps){const s=[];for(let k=0;k<=steps;k++){const t=k/steps;s.push(fn(t)+' '+(t*100).toFixed(1)+'%');}return 'linear-gradient(90deg,'+s.join(',')+')';}
+function updateEditor(){
+  const c=colors[active];if(!c)return;
+  $('edChip').style.background=c.hex;
+  if(document.activeElement!==$('hexIn'))$('hexIn').value=c.hex;
+  $('edLock').innerHTML=svg(c.locked?'lock':'unlock');$('edLock').classList.toggle('on',c.locked);
+  $('edPick').value=c.hex.toLowerCase();
+  if(editingSlider!=='sL')$('sL').value=Math.round(c.L*100);
+  if(editingSlider!=='sC')$('sC').value=Math.round(c.C*200)/2;
+  if(editingSlider!=='sH'&&c.C>.006)$('sH').value=Math.round(c.h)%360;
+  const Ls=+$('sL').value/100,Cs=+$('sC').value/100,Hs=+$('sH').value;
+  $('sLOut').textContent=Math.round(c.L*100);$('sCOut').textContent=c.C.toFixed(2).replace(/^0/,'');$('sHOut').textContent=Math.round(c.h)+'°';
+  $('sL').style.setProperty('--g',ramp(t=>lchToHex(.03+t*.95,Cs,Hs),12));
+  $('sC').style.setProperty('--g',ramp(t=>lchToHex(Ls,t*CMAX,Hs),10));
+  $('sH').style.setProperty('--g',ramp(t=>lchToHex(Ls,Math.max(Cs,.05),t*360),18));
+  ['sL','sC','sH'].forEach(id=>$(id).style.setProperty('--thumb',c.hex));
+}
+['sL','sC','sH'].forEach(id=>{
+  const el=$(id);
+  el.addEventListener('pointerdown',()=>beginGesture(active));
+  el.addEventListener('input',()=>{editingSlider=id;editColor(active,+$('sL').value/100,+$('sC').value/100,+$('sH').value);editingSlider=null;});
+  el.addEventListener('change',endGesture);
+});
+function commitHex(){let v=$('hexIn').value.trim();if(!v.startsWith('#'))v='#'+v;if(setHex(active,v))toast('Updated');else{$('hexIn').value=colors[active].hex;toast('Use a 6-digit HEX code');}}
+$('hexIn').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('hexIn').blur();}});
+$('hexIn').addEventListener('change',commitHex);
+$('edLock').addEventListener('click',()=>toggleLock(active));
+$('edCopy').addEventListener('click',()=>copyText(colors[active].hex,'Copied '+colors[active].hex));
+$('edPick').addEventListener('change',()=>setHex(active,$('edPick').value));
+
+/* relationship pane */
+function setMode(m){mode=MODE_NAMES[m]?m:'complementary';document.querySelectorAll('.mode').forEach(b=>b.classList.toggle('on',b.dataset.mode===mode));if($('modeSelect'))$('modeSelect').value=mode;$('genMode').textContent=MODE_NAMES[mode];if(mode!=='between')betweenPicking=false;updateBetweenUI();}
+function activateMode(m){setMode(m);if(m==='between'){beginBetweenPick();render();}else generate(false);}
+document.querySelectorAll('.mode').forEach(b=>b.addEventListener('click',()=>activateMode(b.dataset.mode)));
+$('modeSelect').addEventListener('change',()=>activateMode($('modeSelect').value));
+$('betweenPick').addEventListener('click',beginBetweenPick);
+function setCount(n){count=clamp(n,MINN,MAXN);$('cOut').textContent=count;$('cMinus').disabled=count<=MINN;$('cPlus').disabled=count>=MAXN;}
+$('cMinus').addEventListener('click',()=>{setCount(count-1);generate(false);});
+$('cPlus').addEventListener('click',()=>{setCount(count+1);generate(false);});
+controls.forEach(id=>$(id).addEventListener('input',()=>generate(false)));
+profileControls.forEach(id=>$(id).addEventListener('change',()=>generate(false)));
+function updateOutputs(){const s=settings();$('tensionOut').textContent=s.tension+'%';$('spacingOut').textContent=s.spacing+'%';$('toneOut').textContent=s.tone+'%';$('chromaOut').textContent=s.chroma+'%';$('temperatureOut').textContent=s.temperature===0?'Neutral':(s.temperature>0?'Warm ':'Cool ')+Math.abs(s.temperature)+'%';$('intervalOut').textContent=s.interval+'°';$('splitAngleOut').textContent=s.splitAngle+'°';}
+
+/* ================= searchable color theory reference ================= */
+const THEORY=[
+// Geometry and harmony structures
+['Monochromatic','Harmony','One hue explored through changes in lightness and chroma.','Useful for cohesive palettes where hierarchy comes from tone rather than hue.','mono'],
+['Between two colors','Gradients','Two chosen palette colors become fixed endpoints; additional slots are filled with evenly spaced RGB-channel interpolation.','Choose Between, tap any two existing palette colors, then use the Colors stepper to add or remove intermediate steps.','between'],
+['Tint / shade / tone','Harmony','A tint moves toward white, a shade toward black, and a tone toward a neutral gray.','These are mixing descriptions; in digital work, adjust lightness and chroma separately.','mono'],
+['Achromatic','Harmony','A palette without chromatic hue: black, white, and grays.','Use near-zero chroma for restrained or value-led palettes.'],
+['Near-achromatic','Harmony','Almost-neutral colors that retain a subtle hue bias.','Tiny hue differences can make a gray system feel warm, cool, or atmospheric.'],
+['Chromatic monochromatic','Harmony','One hue expressed through changing chroma, with little or no hue rotation.','Use lightness and chroma as separate controls.'],
+['Analogous','Harmony','Neighboring hues arranged around a dominant hue.','Good for continuity; control lightness and chroma so neighboring colors remain distinct.','analogous'],
+['Narrow analogous','Harmony','A tight cluster of neighboring hues with small angular differences.','Produces a restrained, unified hue family.','narrow'],
+['Extended analogous','Harmony','A wider run of neighboring hues across a larger section of the wheel.','Adds variety without jumping to a full complement.','extended'],
+['Analogous with accent','Harmony','A neighboring-hue foundation interrupted by one contrasting accent.','Keep the accent rare so it punctuates rather than competes.','analogous'],
+['Complementary','Harmony','Two hues approximately 180° apart on a hue circle.','Strong contrast; tune lightness and chroma independently to avoid visual vibration.','complementary'],
+['Near complementary','Harmony','A pair close to, but not exactly, opposite on the hue wheel.','Often feels less obvious and less aggressively balanced than a pure complement.','nearComplement'],
+['Split complementary','Harmony','A base hue paired with the two hues flanking its complement.','Offers contrast with more flexibility than a single complementary pair.','split'],
+['Double complementary','Harmony','Two complementary pairs, often arranged as a rectangle.','Four-hue structure; decide which pair dominates.','doubleComplement'],
+['Tetradic / rectangular','Harmony','Four hues arranged as two opposing pairs; rectangular systems allow unequal intervals.','Use area and chroma hierarchy to prevent all four hues competing.','rectangle'],
+['Square','Harmony','Four hues separated by approximately 90° intervals.','A high-variety structure that benefits from one dominant hue.','square'],
+['Triadic','Harmony','Three hues separated by roughly 120°.','Equal wheel spacing does not imply equal visual weight.','triadic'],
+['Split triadic','Harmony','A modified triad with intentionally unequal angular spacing.','Useful when a regular triad feels too mechanical.','splitTriad'],
+['Asymmetric triad','Harmony','Three hues with irregular spacing rather than equal 120° intervals.','Keeps a three-part structure while breaking perfect geometry.','asymTriad'],
+['Diadic','Harmony','A two-hue relationship defined by a chosen angular interval.','The interval can be close, moderate, or nearly complementary.','diadic'],
+['Pentadic','Harmony','A five-color structure distributed around the hue circle.','Use uneven visual weights even if the hue positions are regular.','pentadic'],
+['Hexadic','Harmony','A six-part hue arrangement, often built from 60° intervals.','Can become busy; constrain chroma or lightness to create order.','hexadic'],
+['Heptadic / octadic','Harmony','Seven- or eight-part hue structures.','These are useful for broad systems and data palettes, not necessarily small compositions.','heptadic'],
+['Equidistant harmony','Harmony','Colors spaced by equal angular intervals, often based on palette size.','A general construction rule rather than one fixed named harmony.','equidistant'],
+['Radial harmony','Harmony','Colors are distributed around a shared center hue or axis, often with a regular angular structure.','A useful way to think about multi-spoke palette structures.','equidistant'],
+['Cyclic harmony','Harmony','A sequence progresses through hue and returns to its starting point.','Useful for repeatable palette cycles and looping visual systems.','equidistant'],
+['Harmonic progression','Harmony','A sequence follows a consistent relationship between successive hues.','A chosen interval can act as the repeated step.','diadic'],
+['Dominant triad','Harmony','A triadic palette in which one hue clearly leads and the other two support it.','Balance hue geometry with unequal chroma and visual area.','triadic'],
+['Primary triad','Harmony','A traditional three-primary arrangement; the exact primaries depend on the color model.','Traditional red-yellow-blue pigment wheels differ from additive RGB and modern print systems.','triadic'],
+['Secondary triad','Harmony','A group built from the secondary hues of a chosen primary system.','The resulting hues depend on the underlying mixing model.','triadic'],
+['Tertiary triad','Harmony','Three selected intermediate hues arranged as a triadic structure.','A triad is geometric; tertiary describes hue placement or mixing origin.','triadic'],
+['Hue cluster','Harmony','Several hues concentrated inside a narrow angular region.','Use subtle hue wandering to avoid a sterile single-hue result.','cluster'],
+['Opposed clusters','Harmony','Two compact hue groups positioned across the wheel from each other.','Creates two clear color families with internal nuance.','opposed'],
+['Multi-cluster harmony','Harmony','Three or more compact hue groups arranged around the wheel.','Useful for complex systems with distinct color families.','multiCluster'],
+['Interrupted sequence','Harmony','A regular progression with one interval deliberately enlarged or omitted.','Creates a break in an otherwise predictable hue rhythm.','interrupted'],
+['Hue spiral','Harmony','Hue rotates while lightness or chroma changes along the sequence.','A palette progression with direction and movement.','spiral'],
+['Spectral arc','Harmony','A palette samples a broad spectrum-like arc rather than the whole hue circle.','A hue-wheel approximation; actual spectral colors follow wavelength and are not a uniform hue circle.','spectral'],
+['Controlled discord','Harmony','A deliberately irregular set of hue relationships.','Preserve one organizing rule, such as shared lightness or a dominant hue.','discord'],
+['Harmonic interval','Harmony','A chosen angular separation used repeatedly to construct a family of palettes.','The interval is a reusable generator parameter, not a universal harmony law.','diadic'],
+['Off-complementary','Harmony','A complementary pair deliberately shifted away from exact opposition.','Often gives a less predictable, more personal color tension.','nearComplement'],
+['Irregular harmony','Harmony','Hue positions are deliberately nonuniform.','Combine irregular hue positions with a controlled value or chroma structure.','discord'],
+
+// Perception and interaction
+['Simultaneous contrast','Perception','A color appears altered by the color immediately surrounding it, in hue, lightness, or chroma.','Test swatches in their actual surrounding context, not only in isolation.'],
+['Successive contrast / afterimage','Perception','After viewing a strong color, a complementary or opponent-like afterimage can appear on a neutral field.','A visual adaptation effect, not a palette formula.'],
+['Color assimilation','Perception','In some patterns, neighboring colors appear to move toward one another rather than farther apart.','Fine stripes and repeated marks can blend perceptually.'],
+['Munker–White illusion','Perception','Colored stripes can change the apparent color of enclosed regions through a mix of assimilation and contrast.','A useful reminder that pattern structure changes perceived color.'],
+['White illusion','Perception','A patterned surround can make identical gray regions appear different in lightness.','Context and stripe placement alter appearance.'],
+['Chevreul effect','Perception','Adjacent fields can exaggerate apparent differences at their boundaries.','Relevant to stripes, adjacent swatches, and tonal separations.'],
+['Bezold effect','Perception','Changing a pattern’s surrounding or interspersed colors can change its overall perceived color.','Particularly relevant to textiles, repeated motifs, and pixel patterns.'],
+['Simultaneous lightness contrast','Perception','A gray appears lighter on a dark surround and darker on a light surround.','Do not judge a color’s lightness without its background.'],
+['Simultaneous saturation contrast','Perception','A color can appear duller beside a vivid neighbor and more vivid beside a muted one.','Useful for deciding where high-chroma accents belong.'],
+['Helmholtz–Kohlrausch effect','Perception','Highly chromatic colors can appear brighter than less chromatic colors at comparable luminance.','Perceived brightness is not determined by luminance alone.'],
+['Hunt effect','Perception','Perceived colorfulness generally increases as viewing luminance increases.','Color appearance depends on viewing conditions.'],
+['Stevens effect','Perception','Perceived contrast changes with adaptation and overall illumination.','A palette may feel different in a bright room than in a dim one.'],
+['Abney effect','Perception','Adding white to a monochromatic light can shift its perceived hue as well as reducing saturation.','Digital desaturation does not always preserve perceived hue.'],
+['Bezold–Brücke shift','Perception','The perceived hue of some lights changes as their intensity changes.','Hue and intensity are not perfectly independent in vision.'],
+['Crispening effect','Perception','Small differences near a contextual boundary can become more noticeable.','Useful when assessing subtle UI states and near-neutral ramps.'],
+['Color induction','Perception','A broad term for changes in perceived hue, chroma, or lightness caused by surrounding colors.','Think of color as relational rather than self-contained.'],
+['Chromatic adaptation','Perception','The visual system adjusts to the prevailing color of illumination.','Neutral surfaces can look different after time in a strongly tinted environment.'],
+['Color constancy','Perception','The visual system tends to keep object colors relatively stable under changing illumination.','The same surface can produce different sensor values but still look like the same color.'],
+['Opponent-process theory','Perception','Color vision uses opponent channels commonly described as red–green, blue–yellow, and light–dark.','Explains why certain color sensations oppose one another.'],
+['Hering opponent colors','Perception','A perceptual model organized around paired elementary color sensations.','Historically influential in describing opponent color experience.'],
+['Irradiation','Perception','Bright regions can appear to spread or occupy more area than equally sized dark regions.','Affects perceived area and visual weight.'],
+['Chromostereopsis','Perception','Some red/blue arrangements appear at different apparent depths under suitable viewing conditions.','Can create a striking depth illusion, but may be uncomfortable.'],
+['Mach bands','Perception','Apparent light and dark bands can occur near luminance transitions.','An edge-processing effect, not actual extra bands in the image.'],
+['Hermann grid illusion','Perception','Dark or bright spots seem to appear at grid intersections in certain high-contrast grids.','A spatial vision effect associated with peripheral viewing.'],
+['Adelson checker-shadow illusion','Perception','Identical gray values can appear different because of shadow and surface interpretation.','Context can overpower raw pixel values.'],
+['Purkinje shift','Perception','At low illumination, sensitivity shifts toward shorter wavelengths; blue-green objects seem relatively brighter than red ones.','Explains why colors change character in dim environments.'],
+['Metamerism','Perception','Different spectral power distributions can produce the same color match under one viewing condition.','A match may fail under another light source.'],
+['Metameric failure','Perception','Two colors that match under one illuminant no longer match under another.','Important in printing, textiles, paint, and product color matching.'],
+['MacAdam ellipses','Perception','Regions in chromaticity space representing small differences that can be difficult to distinguish.','Shows that equal distances on a simple chromaticity diagram are not equally perceptible.'],
+['Helson–Judd effect','Perception','A color-appearance phenomenon involving the influence of chromatic illumination and adaptation on perceived object color.','A reminder that illumination and adaptation affect color appearance.'],
+
+// Tonal and chromatic relationships
+['Equal-lightness palette','Tone & chroma','Colors share approximately the same perceptual lightness while hue changes.','Useful for color-coded categories that should have similar tonal weight.'],
+['Lightness contrast','Tone & chroma','Colors differ substantially in perceptual lightness.','Often more reliable for hierarchy and readability than hue contrast alone.'],
+['Value hierarchy','Tone & chroma','Colors are organized into deliberate lightness roles, such as background, midtone, and accent.','Check a palette in grayscale to inspect its value structure.'],
+['High-key palette','Tone & chroma','Most colors occupy the lighter end of the lightness range.','Creates an airy, luminous overall structure.','mono'],
+['Low-key palette','Tone & chroma','Most colors occupy the darker end of the lightness range.','Creates a dense, subdued, or dramatic structure.','mono'],
+['Value compression','Tone & chroma','Colors are constrained to a narrow lightness range.','Useful when hue and chroma should carry more of the distinction.'],
+['Value expansion','Tone & chroma','Colors span a broad lightness range.','Creates stronger tonal hierarchy.'],
+['Lightness inversion','Tone & chroma','Light and dark roles are deliberately reversed across a palette or composition.','Useful for alternative themes and unexpected hierarchy.'],
+['Chroma inversion','Tone & chroma','Muted and highly saturated roles are reversed from the expected arrangement.','Can make cool or subdued hues become the primary accents.'],
+['Saturation contrast','Tone & chroma','A vivid color is contrasted with a less saturated neighbor.','Often creates hierarchy without large hue changes.'],
+['Equal-chroma palette','Tone & chroma','Colors are kept near a shared chroma level.','Can make hue comparisons feel more even, subject to gamut limits.'],
+['Equal-saturation palette','Tone & chroma','Colors share a saturation measurement within a chosen color model.','Remember that equal HSL saturation is not equal perceptual chroma.'],
+['Chroma hierarchy','Tone & chroma','A few colors receive higher chroma while supporting colors remain muted.','Directs attention without requiring more hues.'],
+['Chroma staircase','Tone & chroma','Chroma increases or decreases in a deliberate sequence.','Builds intensity progression with hue held relatively steady.'],
+['Chroma budgeting','Tone & chroma','High-chroma colors are used sparingly and assigned specific roles.','Treat saturation as a limited attention resource.'],
+['High-chroma / low-chroma','Tone & chroma','A palette uses vivid or muted chromatic intensity as a defining feature.','Chroma is distinct from lightness and from HSL saturation.'],
+['Tint','Tone & chroma','A traditional mixture of a hue with white.','In digital work, raising lightness alone is not always a perceptual tint.'],
+['Shade','Tone & chroma','A traditional mixture of a hue with black.','A darker version may also lose chroma or shift hue.'],
+['Tone','Tone & chroma','A traditional mixture of a hue with gray.','Often used loosely for a muted or subdued color.'],
+['Near-monochromatic','Tone & chroma','A mostly single-hue palette with small hue deviations.','Keeps unity while avoiding a perfectly rigid hue lock.'],
+['Tonal monochromatic','Tone & chroma','A one-hue palette organized mainly by lightness steps.','The hue stays stable while value establishes hierarchy.','mono'],
+['Warm neutral','Tone & chroma','A near-neutral color with a slight bias toward warm hues.','Warm and cool grays are often easier to judge side by side.'],
+['Cool neutral','Tone & chroma','A near-neutral color with a slight bias toward cool hues.','A tiny chromatic bias can make a neutral palette feel coherent.'],
+['Broken color','Tone & chroma','A color is built from fragments or small neighboring variations instead of one flat fill.','Useful in painterly rendering, pointillism, dithering, and textured generative art.','',],
+['Complement contamination','Tone & chroma','A hue is subtly shifted or muted toward its complementary region.','Can make a palette less clean and more complex.','',],
+
+// Temperature and composition
+['Warm–cool contrast','Composition','Warm-leaning and cool-leaning colors are placed in relation to one another.','Temperature is relative; a blue can be warmer than another blue.'],
+['Relative temperature','Composition','A color feels warmer or cooler depending on its neighbors.','Compare colors within their local context, not as absolute categories.'],
+['Warm / cool inversion','Composition','Expected temperature roles are reversed, such as vivid cool accents with muted warm support.','Useful for breaking familiar palette conventions.'],
+['Temperature gradient','Composition','A gradual transition from warm-leaning hues to cool-leaning hues.','A temperature progression can coexist with an analogous or spectral hue path.'],
+['Thermal oscillation','Composition','Warm and cool regions alternate through a sequence.','Creates rhythm and repeated temperature contrast.'],
+['Contrast of extension','Composition','Different colors occupy different proportions of the total visual area.','A small accent can balance a much larger field of another color.'],
+['Dominant–accent structure','Composition','One color or family dominates while a smaller group supplies contrast.','Control visual hierarchy through area, chroma, and placement.'],
+['Color punctuation','Composition','A rare, small contrasting mark interrupts an otherwise restrained palette.','The accent gains importance through scarcity.','',],
+['Chromatic echo','Composition','A hue or hue family is repeated in small accents across a composition.','Creates continuity between otherwise different regions.','',],
+['Chromatic hierarchy','Composition','Colors are assigned distinct levels of visual importance.','Use dominance, contrast, area, and repetition together.'],
+['Hue weighting','Composition','Some hue regions receive more representation or emphasis than others.','Useful for building a palette around one color family with occasional secondary families.'],
+['Color proportion','Composition','Colors are assigned different area shares rather than equal visual quantities.','This is the practical side of contrast of extension.'],
+['Color resonance','Composition','Repeated or related hues reinforce one another across a composition.','A recurring hue can visually connect distant elements.'],
+['Color dissonance','Composition','Colors are intentionally arranged to feel tense or unresolved.','Useful when tension is the goal rather than conventional harmony.','discord'],
+['Thermal progression','Composition','A sequence moves from cooler to warmer color relationships or vice versa.','Can imply heat, distance, or emotional progression.'],
+['Atmospheric perspective','Composition','Distant elements often appear lighter, less distinct, and cooler or bluer due to atmospheric scattering.','Useful for depth cues, though local lighting can alter the pattern.'],
+['Chromatic vibration','Composition','Contrasting colors with similar lightness can produce an unstable or vibrating edge.','Test carefully; strong examples can strain the eyes.'],
+['Optical mixing','Optical','Separate colors are visually integrated at a distance or at small scale.','The mixture happens in perception rather than in the color material.'],
+['Pointillism','Optical','Small, distinct marks are placed so the eye combines them into broader color impressions.','Useful for broken-color painting and pixel-based experiments.'],
+['Divisionism','Optical','Color is separated into distinct marks according to optical and color-theory ideas.','Historically related to Neo-Impressionist painting.'],
+['Halftone','Optical','Dot size or spacing simulates intermediate tones in printing or display.','A spatial tone technique rather than a hue harmony.'],
+['Dithering','Optical','Spatial patterns of limited colors simulate intermediate tones or colors.','Useful for retro graphics and image quantization.'],
+['Ordered dithering','Optical','A regular threshold matrix controls where pixels switch between palette colors.','Creates structured texture and repeatable patterns.'],
+['Error diffusion','Optical','Quantization error is distributed to nearby pixels to preserve average tone.','Can create organic grain and directional texture.'],
+['Floyd–Steinberg dithering','Optical','A classic error-diffusion method that distributes quantization error to neighboring pixels.','Useful for image reduction, though its patterns can be directional.'],
+['Checkerboard mixing','Optical','Alternating blocks of two colors create an intermediate impression at a distance.','A simple test of spatial color integration.'],
+['Moiré interference','Optical','Overlapping repetitive patterns create larger-scale interference structures.','Can produce unexpected waves and color interactions.'],
+['Subpixel mixing','Optical','Tiny display elements combine into a perceived color or edge.','Relevant to screens and display rendering.'],
+
+// Color systems and measurement
+['Munsell system','Systems','Organizes color by hue, value, and chroma in a perceptually informed solid.','Useful for understanding that maximum chroma varies with hue and value.'],
+['Ostwald system','Systems','Describes colors through proportions of full color, white, and black.','A historical system with a different structure from hue-wheel models.'],
+['Natural Color System (NCS)','Systems','Describes color resemblance to six elementary perceptions: white, black, yellow, red, blue, and green.','A perceptual description system used in design and industry.'],
+['Goethe color theory','Systems','A historical approach emphasizing perception, boundaries, and psychological experience of color.','Read alongside modern color science rather than as a replacement for it.'],
+['Itten’s seven contrasts','Systems','Hue, light–dark, warm–cool, complementary, simultaneous, saturation, and extension contrasts.','A useful compositional checklist.'],
+['Albers: Interaction of Color','Systems','Studies how a color changes appearance depending on its context.','Excellent practical exercises for relational color perception.'],
+['CIE XYZ','Systems','A foundational color-matching representation used in color science.','A basis for many colorimetric conversions.'],
+['CIELAB','Systems','Uses lightness and opponent-like a/b dimensions to describe color differences.','More perceptual than raw RGB, though not perfectly uniform.'],
+['CIELCh','Systems','A cylindrical form of Lab using lightness, chroma, and hue.','Makes hue-angle relationships easier to describe.'],
+['CIELUV','Systems','A perceptually oriented color space with lightness and chromatic coordinates.','Used in some color and lighting applications.'],
+['OKLab','Systems','A modern perceptually oriented color space designed for practical color manipulation.','The palette engine uses OKLab as its underlying representation.'],
+['OKLCH','Systems','A cylindrical form of OKLab with lightness, chroma, and hue.','The palette engine uses this for editing and generating colors.'],
+['HSL / HSV','Systems','Intuitive cylindrical transforms of RGB using hue, saturation, and lightness or value.','Convenient controls, but not perceptually uniform.'],
+['HWB','Systems','Describes a color through hue, whiteness, and blackness.','A simple intuitive alternative to HSL/HSV.'],
+['RGB / additive mixing','Systems','Red, green, and blue light combine additively; together at full intensity they produce white.','The relevant model for screens and emitted light.'],
+['CMY / CMYK','Systems','Cyan, magenta, and yellow inks absorb portions of light; black is added in CMYK printing.','A subtractive model for printing, not screen emission.'],
+['LMS cone space','Systems','Represents responses associated with the long-, medium-, and short-wavelength cone classes.','Useful in models of human color vision.'],
+['IPT','Systems','A perceptual color space designed for image processing and color appearance work.','Separates intensity and opponent chromatic dimensions.'],
+['JzAzBz','Systems','A color space developed for high-dynamic-range and wide-gamut color comparisons.','Useful when HDR color appearance matters.'],
+['CIE xyY','Systems','Chromaticity coordinates x/y are paired with luminance Y.','Separates chromaticity from luminance in a colorimetric description.'],
+['Color rendering index (CRI)','Systems','A measure comparing how a light source renders selected object colors relative to a reference.','Important for lighting decisions; it does not fully describe every aspect of color quality.'],
+['Chromatic adaptation transform','Systems','A mathematical transform approximating how color appearance changes between illuminants.','Used in color management workflows when adapting between viewing whites.'],
+['ΔE OK','Systems','A color-difference measure calculated in OKLab coordinates.','Useful for comparing palette colors in a more perceptual space than raw RGB.'],
+['RGB Euclidean distance','Systems','A simple straight-line distance between RGB channel values.','Easy to calculate but not perceptually uniform.'],
+['CIEDE2000 / ΔE','Systems','Color-difference formulas estimate how different two colors appear.','CIEDE2000 improves on simple Euclidean Lab distance for many practical comparisons.'],
+['Gamut mapping','Systems','Transforms colors that fall outside a device’s reproducible gamut into its available range.','Affects how vivid colors survive export between devices.'],
+['MacAdam ellipses','Systems','Chromaticity regions illustrating that perceptual discrimination varies across color space.','A key reason simple geometric distance can mislead.'],
+
+// Gradients and procedural relationships
+['Hue interpolation: shortest path','Gradients','Interpolates between hues using the smaller circular angular distance.','Prevents a 350° to 10° transition from taking the long route.'],
+['Hue interpolation: longest path','Gradients','Interpolates around the longer side of the hue circle.','Useful for deliberately sweeping through a broad spectrum.'],
+['Linear interpolation','Gradients','A color parameter changes at a constant numerical rate.','Simple, but not always perceptually smooth.'],
+['Perceptual interpolation','Gradients','Color transitions are calculated in a color space intended to behave more uniformly to vision.','OKLab/OKLCH can produce smoother-looking transitions than raw RGB in many cases.'],
+['Nonlinear interpolation','Gradients','A curve changes the rate at which hue, lightness, or chroma progresses.','Use easing curves for controlled acceleration and deceleration.'],
+['Chroma fading / blooming','Gradients','Chroma decreases or increases across a color progression.','Can make a gradient feel like it is receding or intensifying.'],
+['Luminance pulsing','Gradients','Lightness or luminance repeatedly rises and falls.','Useful for rhythmic or animated color systems.'],
+['Hue locking','Gradients','Hue is held fixed while other dimensions change.','Creates a stable hue family.','mono'],
+['Hue wandering','Gradients','Small controlled deviations allow a palette to drift around a central hue.','Adds organic variation without abandoning a dominant family.','analogous'],
+['Hue drift','Gradients','Small successive hue changes accumulate across a sequence.','Creates organic progression rather than fixed stops.'],
+['Palette rotation','Gradients','The entire hue arrangement rotates while its angular relationships remain intact.','A simple way to explore the same harmony in a different color region.','equidistant'],
+['Palette folding','Gradients','A broad hue spread is compressed into a narrower angular region.','Creates a denser or more analogous family.','narrow'],
+['Palette expansion','Gradients','A narrow hue family is spread across a wider angular region.','Adds contrast while preserving the sequence order.','extended'],
+['Harmonic mutation','Gradients','A structured harmony is changed while its underlying relationship is partly preserved.','Use small angular shifts and controlled chroma changes.','discord'],
+['Perceptual clustering','Gradients','Colors are grouped according to perceptual similarity rather than raw RGB distance.','OKLab distance is one practical approximation.'],
+['Hue wrapping','Gradients','Hue interpolation crosses the 360°/0° boundary without a discontinuity.','For example, 350° to 10° should normally travel through 0°.'],
+['Ease-in / ease-out','Gradients','An interpolation curve controls how quickly color parameters change over time or distance.','Useful for gradients that accelerate or settle.'],
+['Color phase shifting','Gradients','Two or more cyclic color progressions use different phase offsets.','Useful for layered animations and generative color fields.'],
+['Phase shifting','Gradients','Multiple color progressions are offset in their cycles or starting points.','Useful for layered animated or generative systems.'],
+['Perceptual spiral','Gradients','Hue rotates while lightness and chroma also vary.','A multidimensional color path rather than a simple wheel rotation.'],
+
+// Optical materials and light
+['Spectral color','Optics','A spectral color corresponds to a narrow wavelength band of visible light.','Not every visible color sensation corresponds to a single wavelength.'],
+['Nonspectral purple','Optics','Purple and magenta sensations arise from combinations of long- and short-wavelength stimulation, not one spectral wavelength.','A reminder that the hue wheel is not a literal wavelength map.'],
+['Prismatic dispersion','Optics','Different wavelengths refract by different amounts, separating white light into a spectrum.','The physical basis of rainbow-like spectral separation.'],
+['Rayleigh scattering','Optics','Shorter wavelengths scatter more strongly than longer wavelengths in small-particle conditions.','Helps explain blue skies and red sunsets.'],
+['Thin-film interference','Optics','Light reflected from thin layers interferes, producing angle- and thickness-dependent colors.','Common in soap bubbles and oil films.'],
+['Structural coloration','Optics','Microscopic structures produce color through selective scattering or interference rather than pigment alone.','Seen in some feathers, insects, and other natural surfaces.'],
+['Iridescence','Optics','Color changes with viewing angle or illumination due to optical structure or interference.','A dynamic material effect, not a fixed palette.'],
+['Opalescence','Optics','A milky, soft optical appearance with bluish scattering and warmer transmitted tones in some materials.','Useful as a material/color reference, not a strict harmony formula.'],
+['Pearlescence','Optics','Soft luster and shifting color associated with layered reflective structures.','Often simulated using highlights and subtle hue shifts.'],
+['Metallic appearance','Optics','A reflective appearance organized around bright highlights, dark reflections, and environmental color.','A metallic swatch cannot be represented fully by one flat HEX value.'],
+['Prismatic color','Optics','Color separated or arranged through wavelength dispersion, as in a prism.','A spectral progression rather than a conventional hue harmony.'],
+['Fluorescence','Optics','A material absorbs light and re-emits it at a longer wavelength while illuminated.','Can make colors appear unusually vivid under suitable lighting.'],
+['Phosphorescence','Optics','A material continues emitting light after excitation has stopped.','A delayed-emission phenomenon.'],
+['Chromatic aberration','Optics','A lens focuses different wavelengths differently, producing colored fringes.','An optical artifact sometimes imitated in digital imagery.'],
+
+// Art traditions
+['Impressionism','History','Emphasizes changing light, observed color, and perceptual effects.','Often uses neighboring marks and broken color to describe illumination.'],
+['Neo-Impressionism','History','Uses systematic small marks and optical color relationships.','Includes pointillist and divisionist approaches.'],
+['Fauvism','History','Uses bold, often non-naturalistic color for expressive impact.','Color is not required to describe an object literally.'],
+['Expressionism','History','Uses color to intensify psychological or emotional content.','Color relationships can be symbolic or subjective.'],
+['Bauhaus color study','History','Treats color as a structured field for studying contrast and interaction.','Connects visual experimentation with teachable systems.'],
+['Japanese traditional color aesthetics','History','Uses seasonal, material, symbolic, and contextual color traditions.','Not one fixed palette formula; traditions vary by period and context.'],
+['Chinese five-phase color associations','History','Historical symbolic systems associate colors with directions, elements/phases, and cosmological relationships.','Cultural and historical framework, not a universal perceptual law.'],
+['Islamic geometric color design','History','Uses repeated geometric structures with carefully organized color fields.','Repetition, symmetry, and proportion shape the color relationships.']
+].map(([title,category,desc,use,mode,setting])=>({title,category,desc,use,mode:mode||null,setting:setting||null}));
+THEORY.find(x=>x.title==='Equal-lightness palette').setting='lightProfile=equal';
+THEORY.find(x=>x.title==='Equal-chroma palette').setting='chromaProfile=equal';
+THEORY.find(x=>x.title==='High-key palette').setting='lightProfile=high';
+THEORY.find(x=>x.title==='Low-key palette').setting='lightProfile=low';
+THEORY.find(x=>x.title==='Chroma staircase').setting='chromaProfile=staircase';
+THEORY.find(x=>x.title==='Broken color').setting='chromaProfile=broken';
+THEORY.find(x=>x.title==='Complement contamination').setting='chromaProfile=contaminated';
+THEORY.find(x=>x.title==='Near-achromatic').setting='chromaProfile=muted';
+THEORY.find(x=>x.title==='Color punctuation').setting='composition=punctuation';
+const THEORY_CATEGORIES=['All','Harmony','Perception','Tone & chroma','Composition','Optical','Systems','Gradients','Optics','History'];
+let theoryCategory='All';
+function renderTheory(){
+  const filters=$('theoryFilters');filters.innerHTML='';
+  THEORY_CATEGORIES.forEach(cat=>{const b=document.createElement('button');b.className='theoryFilter'+(theoryCategory===cat?' on':'');b.textContent=cat;b.addEventListener('click',()=>{theoryCategory=cat;renderTheory();});filters.appendChild(b);});
+  const q=$('theorySearch').value.trim().toLowerCase();
+  const list=THEORY.filter(x=>(theoryCategory==='All'||x.category===theoryCategory)&&(!q||(x.title+' '+x.category+' '+x.desc+' '+x.use).toLowerCase().includes(q)));
+  $('theoryMeta').textContent=list.length+' of '+THEORY.length+' concepts';
+  const root=$('theoryList');root.innerHTML='';
+  if(!list.length){root.innerHTML='<div class="theoryEmpty">No matching concepts.</div>';return;}
+  list.forEach(item=>{
+    const card=document.createElement('article');card.className='theoryItem';
+    const head=document.createElement('div');head.className='theoryItemHead';
+    const name=document.createElement('b');name.textContent=item.title;
+    const cat=document.createElement('small');cat.textContent=item.category;
+    head.append(name,cat);
+    const desc=document.createElement('p');desc.textContent=item.desc;
+    const use=document.createElement('p');use.textContent=item.use;
+    card.append(head,desc,use);
+    if(item.mode||item.setting){const foot=document.createElement('div');foot.className='theoryItemFoot';const btn=document.createElement('button');btn.className='theoryTry';btn.textContent='Try in generator';btn.addEventListener('click',()=>{
+      if(item.mode){if(item.mode==='between')activateMode(item.mode);else setMode(item.mode);}
+      if(item.setting){const [id,val]=item.setting.split('=');if($(id))$(id).value=val;}
+      openSheet('rel');if(item.mode!=='between')generate(false);toast('Applied: '+item.title);
+    });foot.appendChild(btn);card.appendChild(foot);}
+    root.appendChild(card);
+  });
+}
+$('theorySearch').addEventListener('input',renderTheory);
+
+/* details pane */
+function renderDetails(){
+  const n=colors.length,s=settings(),hues=colors.map(c=>c.h),mean=circularMean(hues),spread=hues.reduce((v,h)=>v+Math.abs(circularDiff(h,mean)),0)/Math.max(1,n);
+  let fit='—';
+  if(mode==='between')fit='Anchored';
+  else if(mode!=='free'){const off=offsetsFor(mode,n,s.spacing,s.interval,s.splitAngle),t=s.temperature*.28,base=circularMean(colors.map((c,i)=>mod(c.h-off[i]-t,360))),err=colors.reduce((a,c,i)=>a+Math.abs(circularDiff(c.h,mod(base+off[i]+t,360))),0)/n;fit=Math.round(clamp(100-err/65*100,0,100))+'%';}
+  $('fitValue').textContent=fit;$('charValue').textContent=spread<24?'Focused':spread<58?'Clustered':spread<92?'Spread':'Wide';
+  let sum=0,cnt=0;for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){sum+=contrast(colors[i].hex,colors[j].hex);cnt++;}
+  $('contrastValue').textContent=cnt?(sum/cnt).toFixed(1)+':1':'—';
+  const warm=colors.reduce((a,c)=>a+warmScore(c.h),0)/Math.max(1,n);$('tempValue').textContent=warm>.22?'Warm':warm<-.22?'Cool':'Balanced';
+  let html='<div class="pairs" style="--n:'+n+'">';
+  colors.forEach((a,i)=>{const ink=inkFor(a.hex);colors.forEach((b,j)=>{
+    if(i===j){html+='<div class="pc" style="background:'+a.hex+'"></div>';return;}
+    const r=contrast(a.hex,b.hex);html+='<div class="pc'+(r<3?' no':'')+'" style="background:'+a.hex+'"><b style="color:'+b.hex+'">Aa</b><i style="color:'+ink+'">'+r.toFixed(1)+'</i></div>';});});
+  $('pairs').innerHTML=html+'</div>';
+}
+function cssText(){return '/* CHROMA palette · '+(MODE_NAMES[mode]||mode)+' · OKLCH profiles: '+settings().lightProfile+'/'+settings().chromaProfile+' */\n:root {\n'+colors.map((c,i)=>'  --color-'+(i+1)+': '+c.hex+';').join('\n')+'\n}\n';}
+function renderSheet(){
+  if(sheetPane==='color')updateEditor();
+  else if(sheetPane==='details')renderDetails();
+  else if(sheetPane==='export')$('cssPreview').textContent=cssText();
+  else if(sheetPane==='rel'){updateOutputs();updateBetweenUI();}
+  else if(sheetPane==='theory'){}
+}
+function render(){updateBetweenUI();renderPalette();renderSheet();queueDraw();scheduleSave();}
+
+/* ================= wheel ================= */
+let drawQueued=false,dragIndex=-1;
+function wheelGeom(size){const c=size/2,R=size*.48;return {cx:c,cy:c,R,ri:R*.88,P:R*.82};}
+function huePoint(c,size){const g=wheelGeom(size),rad=(c.h-90)*Math.PI/180,r=clamp(c.C/CMAX,0,1)*g.P;return {x:g.cx+Math.cos(rad)*r,y:g.cy+Math.sin(rad)*r};}
+let ringHexes=null;function ringColors(){if(!ringHexes){ringHexes=[];for(let d=0;d<360;d++)ringHexes.push(lchToHex(.74,.16,d));}return ringHexes;}
+const plane={key:'',cv:null};
+function planeImage(L){
+  const key=L.toFixed(3);if(plane.cv&&plane.key===key)return plane.cv;
+  const N=176;if(!plane.cv){plane.cv=document.createElement('canvas');plane.cv.width=plane.cv.height=N;}
+  const ctx=plane.cv.getContext('2d'),img=ctx.createImageData(N,N),d=img.data,half=N/2;
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const dx=x+.5-half,dy=y+.5-half,r=Math.hypot(dx,dy)/half;if(r>1.03)continue;
+    const C=Math.min(r,1)*CMAX,h=Math.atan2(dy,dx)*180/Math.PI+90,rgb=lchToRgb(L,C,h),ok=rgb.every(v=>v>=-.002&&v<=1.002),o=(y*N+x)*4;
+    d[o]=clamp(rgb[0],0,1)*255;d[o+1]=clamp(rgb[1],0,1)*255;d[o+2]=clamp(rgb[2],0,1)*255;d[o+3]=ok?255:40;
+  }
+  ctx.putImageData(img,0,0);plane.key=key;return plane.cv;
+}
+function queueDraw(){if(sheetPane==='wheel'&&!drawQueued){drawQueued=true;requestAnimationFrame(drawWheel);}}
+function drawWheel(){
+  drawQueued=false;if(sheetPane!=='wheel')return;
+  const canvas=$('wheel'),box=canvas.parentElement,avail=Math.min(box.clientWidth,innerHeight*.4-42-8);
+  const size=Math.max(140,Math.floor(avail));
+  if(canvas.style.width!==size+'px'){canvas.style.width=size+'px';canvas.style.height=size+'px';}
+  const dpr=Math.min(devicePixelRatio||1,2),px=Math.round(size*dpr);if(canvas.width!==px){canvas.width=px;canvas.height=px;}
+  const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,size,size);
+  const g=wheelGeom(size),ring=ringColors();
+  for(let d=0;d<360;d++){const a1=(d-90)*Math.PI/180,a2=(d+1.4-90)*Math.PI/180;ctx.beginPath();ctx.arc(g.cx,g.cy,g.ri,a1,a2);ctx.arc(g.cx,g.cy,g.R,a2,a1,true);ctx.closePath();ctx.fillStyle=ring[d];ctx.fill();}
+  ctx.beginPath();ctx.arc(g.cx,g.cy,g.P,0,TAU);ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--lens').trim()||'#1b1f25';ctx.fill();
+  const ac=colors[active];
+  if(ac){ctx.save();ctx.beginPath();ctx.arc(g.cx,g.cy,g.P,0,TAU);ctx.clip();ctx.drawImage(planeImage(ac.L),g.cx-g.P,g.cy-g.P,g.P*2,g.P*2);ctx.restore();}
+  const pts=colors.map((c,i)=>({...huePoint(c,size),c,i}));
+  if(pts.length>1){ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=1.2;ctx.setLineDash([3,4]);ctx.stroke();ctx.setLineDash([]);}
+  pts.slice().sort((a,b)=>(a.i===active)-(b.i===active)).forEach(p=>{
+    const on=p.i===active,r=on?12:9;
+    ctx.beginPath();ctx.arc(p.x,p.y,r,0,TAU);ctx.fillStyle=p.c.hex;ctx.fill();
+    ctx.lineWidth=on?3:2;ctx.strokeStyle='#fff';ctx.stroke();
+    if(p.c.locked){ctx.fillStyle=inkFor(p.c.hex);ctx.beginPath();ctx.arc(p.x,p.y,2.5,0,TAU);ctx.fill();}
+  });
+}
+function wheelXY(e){const r=$('wheel').getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top,size:r.width};}
+function closestDot(x,y,size){let best=-1,dist=Infinity;colors.forEach((c,i)=>{const p=huePoint(c,size),d=Math.hypot(p.x-x,p.y-y)-(i===active?3:0);if(d<dist){dist=d;best=i;}});return dist<=24?best:-1;}
+function wheelMove(i,x,y,size){
+  const g=wheelGeom(size),dx=x-g.cx,dy=y-g.cy,h=mod(Math.atan2(dy,dx)*180/Math.PI+90,360),C=clamp(Math.hypot(dx,dy)/g.P*CMAX,.004,CMAX);
+  editColor(i,gesture?gesture.snap[i].L:colors[i].L,C,h);
+}
+const wheel=$('wheel');
+wheel.addEventListener('pointerdown',e=>{
+  const p=wheelXY(e),g=wheelGeom(p.size),idx=closestDot(p.x,p.y,p.size);
+  if(idx>=0){dragIndex=idx;active=idx;beginGesture(idx);render();}
+  else{if(Math.hypot(p.x-g.cx,p.y-g.cy)>g.R+4)return;dragIndex=active;beginGesture(active);wheelMove(active,p.x,p.y,p.size);}
+  try{wheel.setPointerCapture(e.pointerId);}catch(err){}e.preventDefault();
+});
+wheel.addEventListener('pointermove',e=>{if(dragIndex<0)return;const p=wheelXY(e);wheelMove(dragIndex,p.x,p.y,p.size);e.preventDefault();});
+function wheelUp(){dragIndex=-1;endGesture();}
+wheel.addEventListener('pointerup',wheelUp);wheel.addEventListener('pointercancel',wheelUp);
+
+/* ================= history + autosave ================= */
+let hist=[],hIdx=-1,restoring=false,saveTimer=null;
+function stateNow(){return {v:11,seed,active,mode,count,settings:settings(),between:{a:betweenA&&betweenA.hex,b:betweenB&&betweenB.hex,pickA:betweenPickA,pickB:betweenPickB,picking:betweenPicking},colors:colors.map(c=>({hex:c.hex,locked:!!c.locked}))};}
+function sameState(a,b){return !!a&&!!b&&JSON.stringify({...a,active:0})===JSON.stringify({...b,active:0});}
+function scheduleSave(){if(restoring)return;clearTimeout(saveTimer);saveTimer=setTimeout(commitState,350);}
+function commitState(){
+  saveTimer=null;const s=stateNow();
+  if(hIdx>=0&&sameState(s,hist[hIdx]))hist[hIdx]=s;
+  else{hist=hist.slice(0,hIdx+1);hist.push(s);if(hist.length>80)hist.shift();hIdx=hist.length-1;}
+  try{localStorage.setItem(STORE,JSON.stringify(s));}catch(e){}
+  $('undo').disabled=hIdx<=0;$('redo').disabled=hIdx>=hist.length-1;
+}
+function flushSave(){if(saveTimer){clearTimeout(saveTimer);commitState();}}
+function validState(s){return s&&Array.isArray(s.colors)&&s.colors.length>=MINN&&s.colors.length<=MAXN&&s.colors.every(c=>c&&hexToRgb(c.hex));}
+function applyState(s){
+  restoring=true;seed=+s.seed||94621;anchor=-1;
+  setMode(MODE_NAMES[s.mode]?s.mode:'complementary');
+  const bt=s.between||{};
+  betweenA=bt.a&&hexToRgb(bt.a)?{hex:rgbToHex(hexToRgb(bt.a))}:null;
+  betweenB=bt.b&&hexToRgb(bt.b)?{hex:rgbToHex(hexToRgb(bt.b))}:null;
+  betweenPickA=Number.isInteger(bt.pickA)?bt.pickA:-1;betweenPickB=Number.isInteger(bt.pickB)?bt.pickB:-1;
+  betweenPicking=mode==='between'&&!!bt.picking;
+  controls.forEach(id=>{if(s.settings&&Number.isFinite(+s.settings[id]))$(id).value=s.settings[id];});
+  profileControls.forEach(id=>{if(s.settings&&s.settings[id]&&[...$(id).options].some(o=>o.value===s.settings[id]))$(id).value=s.settings[id];});
+  colors=s.colors.map(c=>({...parseColor(c.hex),locked:!!c.locked}));setCount(colors.length);
+  if(!betweenPicking){betweenPickA=-1;betweenPickB=-1;}
+  active=clamp(s.active|0,0,colors.length-1);render();restoring=false;
+  $('undo').disabled=hIdx<=0;$('redo').disabled=hIdx>=hist.length-1;
+}
+$('undo').addEventListener('click',()=>{flushSave();if(hIdx>0){hIdx--;applyState(hist[hIdx]);try{localStorage.setItem(STORE,JSON.stringify(hist[hIdx]));}catch(e){}}});
+$('redo').addEventListener('click',()=>{flushSave();if(hIdx<hist.length-1){hIdx++;applyState(hist[hIdx]);try{localStorage.setItem(STORE,JSON.stringify(hist[hIdx]));}catch(e){}}});
+
+/* ================= saved palettes ================= */
+function loadLib(){try{const l=JSON.parse(localStorage.getItem(LIB)||'[]');return Array.isArray(l)?l.filter(p=>p&&Array.isArray(p.hexes)&&p.hexes.length>=MINN&&p.hexes.length<=MAXN&&p.hexes.every(hexToRgb)):[];}catch(e){return [];}}
+function storeLib(lib){try{localStorage.setItem(LIB,JSON.stringify(lib));return true;}catch(e){toast('Storage unavailable here');return false;}}
+function savePalette(){
+  const lib=loadLib(),hexes=colors.map(c=>c.hex);
+  if(lib.some(p=>p.hexes.join()===hexes.join())){toast('Already saved');return;}
+  lib.unshift({hexes,mode,between:mode==='between'&&betweenA&&betweenB?{a:betweenA.hex,b:betweenB.hex}:null,t:Date.now()});if(lib.length>80)lib.length=80;if(storeLib(lib))toast('Saved');
+}
+function renderLib(){
+  const lib=loadLib(),root=$('lib');root.innerHTML='';
+  if(!lib.length){root.innerHTML='<p class="note">Nothing saved yet — use Save in the More menu.</p>';return;}
+  lib.forEach(p=>{
+    const row=document.createElement('div');row.className='libRow';
+    const strip=document.createElement('button');strip.className='libStrip';strip.setAttribute('aria-label','Load '+p.hexes.join(' '));
+    p.hexes.forEach(h=>{const s=document.createElement('span');s.style.background=h;strip.appendChild(s);});
+    strip.addEventListener('click',()=>{
+      colors=p.hexes.map(h=>({...parseColor(h),locked:false}));setCount(colors.length);
+      if(MODE_NAMES[p.mode])setMode(p.mode);
+      if(p.mode==='between'&&p.between&&hexToRgb(p.between.a)&&hexToRgb(p.between.b)){
+        betweenA={hex:rgbToHex(hexToRgb(p.between.a))};betweenB={hex:rgbToHex(hexToRgb(p.between.b))};betweenPicking=false;betweenPickA=-1;betweenPickB=-1;
+      }else if(p.mode==='between'){
+        betweenA=null;betweenB=null;betweenPickA=-1;betweenPickB=-1;betweenPicking=true;
+      }
+      active=0;anchor=-1;render();toast('Loaded');
+    });
+    const del=document.createElement('button');del.className='libDel';del.textContent='Delete';let armT=null;
+    del.addEventListener('click',()=>{if(!del.classList.contains('armed')){del.classList.add('armed');del.textContent='Sure?';armT=setTimeout(()=>{del.classList.remove('armed');del.textContent='Delete';},2500);return;}clearTimeout(armT);if(storeLib(loadLib().filter(q=>!(q.t===p.t&&q.hexes.join()===p.hexes.join()))))renderLib();});
+    row.append(strip,del);root.appendChild(row);
+  });
+}
+
+/* ================= snapshot (long-press save overlay) ================= */
+function snapshot(){
+  const W=1080,H=1350,n=colors.length,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d'),bh=H/n;
+  colors.forEach((c,i)=>{g.fillStyle=c.hex;g.fillRect(0,Math.floor(i*bh),W,Math.ceil(bh)+1);g.fillStyle=inkFor(c.hex);g.font='600 '+Math.min(54,bh*.36)+'px -apple-system,Helvetica,sans-serif';g.textBaseline='middle';g.fillText(c.hex.slice(1),72,i*bh+bh/2);});
+  $('shotImg').src=cv.toDataURL('image/png');$('shot').classList.add('show');
+}
+$('shot').addEventListener('click',()=>$('shot').classList.remove('show'));
+
+/* ================= menu ================= */
+document.querySelectorAll('.tile').forEach(t=>t.addEventListener('click',()=>{
+  const a=t.dataset.act;
+  if(a==='image')openPicker();
+  else if(a==='save')savePalette();
+  else if(a==='saved')openSheet('saved');
+  else if(a==='export')openSheet('export');
+  else if(a==='details')openSheet('details');
+  else if(a==='theory')openSheet('theory');
+  else if(a==='snap'){closeSheet();snapshot();}
+  else if(a==='unlock'){colors.forEach(c=>c.locked=false);render();toast('All colors unlocked');}
+  else if(a==='theme'){setTheme(!document.documentElement.classList.contains('dark'));}
+}));
+function setTheme(dark){document.documentElement.classList.toggle('dark',dark);$('themeLabel').textContent=dark?'Light UI':'Dark UI';document.querySelector('meta[name="theme-color"]').content=dark?'#14181d':'#ffffff';saveUI();queueDraw();}
+function saveUI(){try{localStorage.setItem(UI,JSON.stringify({dark:document.documentElement.classList.contains('dark'),link}));}catch(e){}}
+$('copyCSS').addEventListener('click',()=>copyText(cssText(),'CSS copied'));
+$('copyHex').addEventListener('click',()=>copyText(colors.map(c=>c.hex).join(', '),'HEX list copied'));
+$('exportCSS').addEventListener('click',()=>{const blob=new Blob([cssText()],{type:'text/css'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='chroma-palette.css';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+$('generate').addEventListener('click',()=>{generate(true);});
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&$('picker').hidden){e.preventDefault();generate(true);}});
+
+/* ================= image picker ================= */
+// Pixels are clustered in OKLab (k-means); every palette color is a real pixel from the image,
+// so each circle sits on the exact spot its color came from.
+const IMG={src:null,w:0,h:0,data:null,P:null,N:0,clusters:[],variants:[],vIdx:0,round:0,pts:[],sel:0,vw:0,vh:0,drag:null};
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function labDist(p,q){return Math.hypot(p.lab[0]-q.lab[0],p.lab[1]-q.lab[1],p.lab[2]-q.lab[2]);}
+function samplePixels(){
+  const d=IMG.data,W=IMG.w,H=IMG.h,step=Math.max(1,Math.round(Math.sqrt(W*H/10000))),P=[];
+  for(let y=step>>1;y<H;y+=step)for(let x=step>>1;x<W;x+=step){const o=(y*W+x)*4;if(d[o+3]<128)continue;const lab=rgbToOklab([d[o]/255,d[o+1]/255,d[o+2]/255]);P.push(lab[0],lab[1],lab[2],x,y);}
+  IMG.P=new Float64Array(P);IMG.N=P.length/5;
+}
+function pixelColor(x,y){const o=(y*IMG.w+x)*4,d=IMG.data,hex=rgbToHex([d[o]/255,d[o+1]/255,d[o+2]/255]),c=parseColor(hex);return {hex,x,y,L:c.L,C:c.C,h:c.h,lab:rgbToOklab(hexToRgb(hex))};}
+function clusterImage(round){
+  const P=IMG.P,N=IMG.N;if(!N)return [];
+  const K=Math.min([16,20,12,24][round%4],N),rnd=mulberry(9173+round*7919),cent=[],dd=new Float64Array(N).fill(Infinity);
+  let f=Math.floor(rnd()*N);cent.push([P[f*5],P[f*5+1],P[f*5+2]]);
+  while(cent.length<K){const c=cent[cent.length-1];let sum=0;for(let i=0;i<N;i++){const e=(P[i*5]-c[0])**2+(P[i*5+1]-c[1])**2+(P[i*5+2]-c[2])**2;if(e<dd[i])dd[i]=e;sum+=dd[i];}if(sum<=1e-12)break;let r=rnd()*sum,i=0;for(;i<N-1;i++){r-=dd[i];if(r<=0)break;}cent.push([P[i*5],P[i*5+1],P[i*5+2]]);}
+  const k=cent.length,asg=new Int32Array(N);
+  for(let it=0;it<14;it++){const acc=new Float64Array(k*4);let moved=0;
+    for(let i=0;i<N;i++){let best=0,bd=Infinity;for(let j=0;j<k;j++){const c=cent[j],e=(P[i*5]-c[0])**2+(P[i*5+1]-c[1])**2+(P[i*5+2]-c[2])**2;if(e<bd){bd=e;best=j;}}if(asg[i]!==best){asg[i]=best;moved++;}acc[best*4]+=P[i*5];acc[best*4+1]+=P[i*5+1];acc[best*4+2]+=P[i*5+2];acc[best*4+3]++;}
+    for(let j=0;j<k;j++)if(acc[j*4+3])cent[j]=[acc[j*4]/acc[j*4+3],acc[j*4+1]/acc[j*4+3],acc[j*4+2]/acc[j*4+3]];
+    if(it>0&&moved<N*.002)break;}
+  // Representative = the cluster's most common fine color, at its middle occurrence (lands in flat areas, not edges).
+  const key=i=>Math.round(P[i*5]*90)+'|'+Math.round(P[i*5+1]*90)+'|'+Math.round(P[i*5+2]*90);
+  const maps=cent.map(()=>new Map()),n=new Int32Array(k);
+  for(let i=0;i<N;i++){const j=asg[i],kk=key(i);maps[j].set(kk,(maps[j].get(kk)||0)+1);n[j]++;}
+  const md=maps.map(m=>{let bk=null,bc=0;m.forEach((c,kk)=>{if(c>bc){bc=c;bk=kk;}});return {kk:bk,target:bc>>1,seen:0,i:-1};});
+  for(let i=0;i<N;i++){const m=md[asg[i]];if((m.i<0||m.seen<=m.target)&&key(i)===m.kk){m.i=i;m.seen++;}}
+  const out=[];for(let j=0;j<k;j++){if(!n[j]||md[j].i<0)continue;const i=md[j].i,c=pixelColor(P[i*5+3],P[i*5+4]);c.w=n[j]/N;out.push(c);}
+  return out.sort((a,b)=>b.w-a.w);
+}
+function pickDistinct(cands,n,minD){const out=[];let dm=minD;while(out.length<n&&dm>.004){for(const c of cands){if(out.length>=n)break;if(!out.includes(c)&&out.every(o=>labDist(o,c)>=dm))out.push(c);}dm*=.6;}for(const c of cands){if(out.length>=n)break;if(!out.includes(c))out.push(c);}return out;}
+// Too few clusters for the slots? Add the real pixels that differ most from what's chosen (never duplicates).
+function fillFromPixels(list,n){
+  const out=list.slice(0,n),P=IMG.P,N=IMG.N,step=Math.max(1,Math.floor(N/3000));
+  while(out.length<n){let best=-1,bd=-1;for(let i=0;i<N;i+=step){const lab=[P[i*5],P[i*5+1],P[i*5+2]];let m=Infinity;for(const o of out){const e=Math.hypot(lab[0]-o.lab[0],lab[1]-o.lab[1],lab[2]-o.lab[2]);if(e<m)m=e;}if(m>bd){bd=m;best=i;}}if(best<0||bd<.004)break;out.push(pixelColor(P[best*5+3],P[best*5+4]));}
+  while(out.length<n&&out.length)out.push(out[out.length%out.length]);
+  return out;
+}
+const byHue=(a,b)=>mod(a.h+30,360)-mod(b.h+30,360),byL=(a,b)=>b.L-a.L;
+function buildVariants(n){
+  const cl=IMG.clusters;if(!cl.length)return [];
+  const sortBy=f=>cl.slice().sort((a,b)=>f(b)-f(a)),V=[];
+  V.push({name:'Balanced',list:pickDistinct(sortBy(c=>Math.sqrt(c.w)*(.5+c.C*5)),n,.08).sort(byL)});
+  V.push({name:'Dominant',list:pickDistinct(cl,n,.075)});
+  V.push({name:'Vibrant',list:pickDistinct(sortBy(c=>Math.pow(c.w,.3)*Math.pow(c.C+.005,1.6)),n,.075).sort(byHue)});
+  V.push({name:'Muted',list:pickDistinct(sortBy(c=>Math.pow(c.w,.6)/(1+Math.pow(c.C/.045,2))*(1-Math.abs(c.L-.62)*.6)),n,.05).sort(byL)});
+  const Ls=cl.map(c=>c.L),Lmax=Math.max(...Ls),Lmin=Math.min(...Ls),ton=[];
+  for(let k=0;k<n;k++){const t=Lmax-(Lmax-Lmin)*(n===1?0:k/(n-1));let best=null,bs=Infinity;for(const c of cl){if(ton.includes(c))continue;const s=Math.abs(c.L-t)-c.w*.08;if(s<bs){bs=s;best=c;}}if(best)ton.push(best);}
+  V.push({name:'Light → dark',list:ton.sort(byL)});
+  const spr=[cl[0]];while(spr.length<Math.min(n,cl.length)){let best=null,bs=-1;for(const c of cl){if(spr.includes(c))continue;const m=Math.min(...spr.map(o=>labDist(o,c)))*Math.pow(c.w,.12);if(m>bs){bs=m;best=c;}}spr.push(best);}
+  V.push({name:'Contrast',list:spr.sort(byHue)});
+  const acc=sortBy(c=>c.C*Math.pow(c.w,.2))[0],base=pickDistinct(cl.filter(c=>c!==acc&&labDist(c,acc)>.09),n-1,.075).slice(0,n-1).sort(byL);
+  V.push({name:'Accent',list:base.concat(acc?[acc]:[])});
+  const seen=new Set();
+  return V.map(v=>({name:v.name,list:fillFromPixels(v.list,n)})).filter(v=>{const k=v.list.map(c=>c.hex).join();if(seen.has(k))return false;seen.add(k);return true;});
+}
+function openPicker(){closeSheet();$('picker').hidden=false;if(IMG.src){requestAnimationFrame(sizePicker);}else $('imageFile').click();}
+function closePicker(){$('picker').hidden=true;IMG.drag=null;}
+$('pkClose').addEventListener('click',closePicker);
+$('pkChoose').addEventListener('click',()=>$('imageFile').click());
+$('pkChange').addEventListener('click',()=>$('imageFile').click());
+$('imageFile').addEventListener('change',e=>{const file=e.target.files&&e.target.files[0];e.target.value='';if(!file)return;const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{
+  try{
+    const sc=Math.min(1,2048/Math.max(img.naturalWidth,img.naturalHeight)),w=Math.max(1,Math.round(img.naturalWidth*sc)),h=Math.max(1,Math.round(img.naturalHeight*sc));
+    const cv=document.createElement('canvas');cv.width=w;cv.height=h;const cx=cv.getContext('2d',{willReadFrequently:true});cx.drawImage(img,0,0,w,h);
+    IMG.src=cv;IMG.w=w;IMG.h=h;IMG.data=cx.getImageData(0,0,w,h).data;IMG.round=0;IMG.sel=0;
+    samplePixels();IMG.clusters=clusterImage(0);
+    $('picker').hidden=false;$('pkEmpty').hidden=true;$('pkView').hidden=false;$('pkLow').hidden=false;$('pkUse').disabled=false;
+    setPkCount(count);buildAndApply(0);requestAnimationFrame(sizePicker);
+  }catch(err){toast('Could not read that image');}
+  URL.revokeObjectURL(url);
+};img.onerror=()=>{URL.revokeObjectURL(url);toast('Could not open that image');};img.src=url;});
+let pkN=5;
+function setPkCount(n){pkN=clamp(n,MINN,MAXN);$('pkN').textContent=pkN;$('pkMinus').disabled=pkN<=MINN;$('pkPlus').disabled=pkN>=MAXN;}
+function buildAndApply(idx){IMG.variants=buildVariants(pkN);applyVersion(clamp(idx,0,IMG.variants.length-1));}
+function applyVersion(i){const v=IMG.variants[i];if(!v)return;IMG.vIdx=i;IMG.pts=v.list.map(c=>({x:c.x,y:c.y,hex:c.hex}));IMG.sel=clamp(IMG.sel,0,IMG.pts.length-1);renderPicker();}
+$('pkMore').addEventListener('click',()=>{if(!IMG.src)return;IMG.round++;IMG.clusters=clusterImage(IMG.round);buildAndApply(Math.max(0,IMG.vIdx));toast('New versions');});
+$('pkMinus').addEventListener('click',()=>changePkCount(-1));
+$('pkPlus').addEventListener('click',()=>changePkCount(1));
+function changePkCount(d){
+  const prev=pkN;setPkCount(pkN+d);if(pkN===prev)return;
+  if(IMG.vIdx>=0){buildAndApply(IMG.vIdx);return;}
+  // hand-tuned circles: keep them, add/remove at the end
+  if(d<0)IMG.pts.pop();
+  else{const have=IMG.pts.map(p=>pixelColor(p.x,p.y)),add=fillFromPixels(have.concat(pickDistinct(IMG.clusters,pkN,.075).filter(c=>!have.some(h=>h.hex===c.hex))),pkN).slice(have.length);IMG.pts.push(...add.map(c=>({x:c.x,y:c.y,hex:c.hex})));}
+  IMG.sel=clamp(IMG.sel,0,IMG.pts.length-1);renderPicker();
+}
+$('pkUse').addEventListener('click',()=>{
+  if(!IMG.pts.length)return;
+  colors=IMG.pts.map(p=>({...parseColor(p.hex),locked:false}));setCount(colors.length);active=0;anchor=-1;
+  closePicker();render();toast('Palette from image');
+});
+function renderPicker(){
+  const strip=$('pkStrip');strip.innerHTML='';
+  IMG.pts.forEach((p,i)=>{const b=document.createElement('button');b.style.background=p.hex;b.style.setProperty('--k',inkFor(p.hex));b.className=i===IMG.sel?'on':'';b.setAttribute('aria-label','Circle '+(i+1)+' '+p.hex);b.addEventListener('click',()=>{IMG.sel=i;renderPicker();});strip.appendChild(b);});
+  const s=IMG.pts[IMG.sel];$('pkHex').textContent=s?s.hex:'—';$('pkPos').textContent=s?s.x+', '+s.y:'';
+  const vc=$('vchips');
+  if(vc.children.length!==IMG.variants.length||vc.dataset.r!==String(IMG.round)+'/'+pkN){
+    vc.innerHTML='';vc.dataset.r=String(IMG.round)+'/'+pkN;
+    IMG.variants.forEach((v,i)=>{const b=document.createElement('button');b.className='vchip';b.innerHTML='<b></b><i></i>';b.querySelector('b').textContent=v.name;v.list.forEach(c=>{const sp=document.createElement('span');sp.style.background=c.hex;b.querySelector('i').appendChild(sp);});b.addEventListener('click',()=>applyVersion(i));vc.appendChild(b);});
+  }
+  [...vc.children].forEach((b,i)=>b.classList.toggle('on',i===IMG.vIdx));
+  drawPicker();
+}
+function sizePicker(){
+  if(!IMG.src||$('picker').hidden)return;const st=$('pkStage'),pad=16,aw=st.clientWidth-pad*2,ah=st.clientHeight-pad*2;if(aw<=0||ah<=0)return;
+  let w=aw,h=w*IMG.h/IMG.w;if(h>ah){h=ah;w=h*IMG.w/IMG.h;}
+  const v=$('pkView'),dpr=Math.min(devicePixelRatio||1,2);IMG.vw=w;IMG.vh=h;
+  v.style.width=Math.round(w)+'px';v.style.height=Math.round(h)+'px';v.width=Math.round(w*dpr);v.height=Math.round(h*dpr);drawPicker();
+}
+function drawPicker(){
+  if(!IMG.src||!IMG.vw)return;const v=$('pkView'),ctx=v.getContext('2d'),dpr=v.width/IMG.vw,W=IMG.vw,H=IMG.vh,k=W/IMG.w;
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=true;ctx.drawImage(IMG.src,0,0,W,H);
+  const R=W<260?13:16;
+  IMG.pts.forEach((p,i)=>{
+    if(IMG.drag&&i===IMG.sel)return;
+    const x=(p.x+.5)*k,y=(p.y+.5)*k,on=i===IMG.sel,r=on?R+3:R;
+    ctx.beginPath();ctx.arc(x,y,r+1.5,0,TAU);ctx.fillStyle='rgba(0,0,0,.25)';ctx.fill();
+    ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fillStyle=p.hex;ctx.fill();ctx.lineWidth=on?3.5:2.5;ctx.strokeStyle='#fff';ctx.stroke();
+  });
+  if(IMG.drag){
+    // while dragging: hollow target ring on the exact pixel + magnified loupe above the finger
+    const p=IMG.pts[IMG.sel],x=(p.x+.5)*k,y=(p.y+.5)*k;
+    ctx.lineWidth=2.5;ctx.strokeStyle='#fff';ctx.beginPath();ctx.arc(x,y,R,0,TAU);ctx.stroke();ctx.lineWidth=1;ctx.strokeStyle='rgba(0,0,0,.5)';ctx.beginPath();ctx.arc(x,y,R+1.8,0,TAU);ctx.stroke();
+    ctx.fillStyle='#fff';ctx.fillRect(x-.75,y-6,1.5,12);ctx.fillRect(x-6,y-.75,12,1.5);
+    const LR=Math.min(48,H*.22),SPAN=11,half=5;let lx=clamp(x,LR+2,W-LR-2),ly=y-LR-58;
+    if(ly<LR+2){ly=clamp(y,LR+2,H-LR-2);lx=x<W/2?Math.min(W-LR-2,x+LR+40):Math.max(LR+2,x-LR-40);}
+    ctx.save();ctx.beginPath();ctx.arc(lx,ly,LR,0,TAU);ctx.clip();ctx.imageSmoothingEnabled=false;ctx.fillStyle='#000';ctx.fillRect(lx-LR,ly-LR,LR*2,LR*2);
+    const cell=LR*2/SPAN;ctx.drawImage(IMG.src,p.x-half,p.y-half,SPAN,SPAN,lx-LR,ly-LR,LR*2,LR*2);
+    ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.strokeRect(lx-cell/2,ly-cell/2,cell,cell);ctx.restore();
+    ctx.beginPath();ctx.arc(lx,ly,LR,0,TAU);ctx.lineWidth=5;ctx.strokeStyle=p.hex;ctx.stroke();ctx.lineWidth=1.5;ctx.strokeStyle='#fff';ctx.beginPath();ctx.arc(lx,ly,LR+3,0,TAU);ctx.stroke();
+    ctx.font='600 11px -apple-system,sans-serif';const tw=ctx.measureText(p.hex).width+14,ty=ly+LR-24;
+    ctx.fillStyle='rgba(10,12,15,.85)';if(ctx.roundRect){ctx.beginPath();ctx.roundRect(lx-tw/2,ty,tw,17,8.5);ctx.fill();}else ctx.fillRect(lx-tw/2,ty,tw,17);
+    ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.hex,lx,ty+9);
+  }
+}
+const pkView=$('pkView');
+function pkXY(e){const r=pkView.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
+function pkSet(vx,vy){const k=IMG.w/IMG.vw,x=clamp(Math.floor(vx*k),0,IMG.w-1),y=clamp(Math.floor(vy*k),0,IMG.h-1),c=pixelColor(x,y);IMG.pts[IMG.sel]={x,y,hex:c.hex};}
+pkView.addEventListener('pointerdown',e=>{
+  if(!IMG.src)return;const p=pkXY(e),k=IMG.vw/IMG.w;let hit=-1,hd=30;
+  IMG.pts.forEach((q,i)=>{const d=Math.hypot((q.x+.5)*k-p.x,(q.y+.5)*k-p.y)-(i===IMG.sel?4:0);if(d<hd){hd=d;hit=i;}});
+  if(hit>=0){IMG.sel=hit;const q=IMG.pts[hit];IMG.drag={ox:(q.x+.5)*k-p.x,oy:(q.y+.5)*k-p.y};}
+  else{IMG.drag={ox:0,oy:0};pkSet(p.x,p.y);}
+  IMG.vIdx=-1;try{pkView.setPointerCapture(e.pointerId);}catch(err){}renderPicker();e.preventDefault();
+});
+pkView.addEventListener('pointermove',e=>{if(!IMG.drag)return;const p=pkXY(e);pkSet(clamp(p.x+IMG.drag.ox,0,IMG.vw-.01),clamp(p.y+IMG.drag.oy,0,IMG.vh-.01));renderPicker();e.preventDefault();});
+function pkUp(){if(!IMG.drag)return;IMG.drag=null;const cur=IMG.pts.map(p=>p.hex).join();IMG.vIdx=IMG.variants.findIndex(v=>v.list.map(c=>c.hex).join()===cur);renderPicker();}
+pkView.addEventListener('pointerup',pkUp);pkView.addEventListener('pointercancel',pkUp);
+
+/* ================= misc ================= */
+function toast(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),1500);}
+async function copyText(text,message){try{if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(text);else{const a=document.createElement('textarea');a.value=text;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();const ok=document.execCommand('copy');a.remove();if(!ok)throw 0;}toast(message||'Copied');}catch(e){toast('Copy unavailable here');}}
+let rT=null;addEventListener('resize',()=>{clearTimeout(rT);rT=setTimeout(()=>{paletteLayout();queueDraw();sizePicker();},60);});
+if(window.ResizeObserver)new ResizeObserver(()=>sizePicker()).observe($('pkStage'));
+addEventListener('pagehide',flushSave);
+
+/* ================= boot ================= */
+let ui=null;try{ui=JSON.parse(localStorage.getItem(UI)||'null');}catch(e){}
+if(ui&&ui.dark)setTheme(true);
+setLink(ui&&['harmony','together','stay'].includes(ui.link)?ui.link:'harmony');
+paletteLayout();
+let saved=null;try{saved=JSON.parse(localStorage.getItem(STORE)||localStorage.getItem(OLDSTORE)||'null');}catch(e){}
+if(validState(saved)){applyState(saved);commitState();}
+else{setMode('complementary');setCount(5);colors=['#E6B566','#315C67','#D76A54','#829B83','#343A52'].map(h=>({...parseColor(h),locked:false}));generate(false);}
+})();
+</script>
+<script>
+// Offline: chroma-sw.js (next to this file) saves the page on the first online visit.
+// Off on localhost so Koder always shows the file you're editing.
+(function(){
+  if(!('serviceWorker' in navigator)||location.protocol!=='https:'||/^(localhost|127\.|\[::1\])/.test(location.hostname))return;
+  navigator.serviceWorker.register('chroma-sw.js').then(()=>navigator.serviceWorker.ready).then(r=>{
+    if(r.active)r.active.postMessage({t:'cache',url:location.href.split('#')[0].split('?')[0]});
+    if(r.active)r.active.postMessage({t:'cache',url:new URL('chroma-icon.png',location.href).href});
+  }).catch(()=>{});
+})();
+</script>
+</body>
+</html>
