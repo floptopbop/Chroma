@@ -37,6 +37,9 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .bar{position:relative;flex:1 1 0;min-height:0;min-width:0;display:flex;align-items:center;gap:8px;padding:0 10px 0 22px;background:var(--c);color:var(--k);cursor:pointer;transition:background-color .12s linear,flex-grow .2s ease;outline:none;user-select:none;-webkit-user-select:none}
 .palette.cols .bar{flex-direction:column;justify-content:flex-end;align-items:center;padding:0 6px 28px}
 .bar.active{flex-grow:1.35}
+.bar{touch-action:none;-webkit-touch-callout:none}
+.bar.lifted{z-index:2;box-shadow:inset 0 0 0 3px var(--k),0 6px 22px rgba(0,0,0,.28)}
+.palette.dragging .bar{transition:background-color .08s linear}
 .bar .tx{flex:1 1 auto;min-width:0}
 .palette.cols .bar .tx{flex:none;text-align:center}
 .bar .hx{display:block;font-weight:650;font-size:17px;letter-spacing:.02em;font-feature-settings:"tnum"}
@@ -152,6 +155,12 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .libStrip span{flex:1 1 0}
 .libDel{height:34px;min-width:34px;padding:0 8px;border:1px solid var(--line);border-radius:8px;font-size:12px;color:var(--muted)}
 .libDel.armed{background:#b4473d;border-color:#b4473d;color:#fff}
+.libBar{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:9px}
+.libBar small{grid-column:1/-1;color:var(--muted);font-size:10.5px;line-height:1.4}
+.libChk{flex:none;height:34px;width:34px;border:1px solid var(--line);border-radius:8px;font-size:13px;color:transparent}
+.libChk.on{background:var(--ink);border-color:var(--ink);color:var(--sheet)}
+.libThumb{flex:none;width:34px;height:34px;border-radius:8px;object-fit:cover}
+#shotShare{padding:0 16px;background:#22262c;color:#e6e8eb;border-color:#3a3f47}
 .note{margin:8px 0 0;color:var(--muted);font-size:11.5px;line-height:1.45}
 .btnRow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .btn{height:36px;border:1px solid var(--line);border-radius:9px;font-size:12px;font-weight:600}
@@ -212,7 +221,7 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .shot.show{display:flex}
 .shot img{max-width:92vw;max-height:80vh;border-radius:10px;-webkit-touch-callout:default}
 .shot p{margin:0;color:#cfd4da;font-size:12px}
-#imageFile{display:none}
+#imageFile,#sheetFile,#tryFile{display:none}
 @media(min-width:700px){.sheet{margin-left:auto;margin-right:auto;width:min(100%,560px);border:1px solid var(--line);border-bottom:0}}
 </style>
 </head>
@@ -235,6 +244,8 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stro
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></symbol>
+  <symbol id="i-sheet" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M7 7h10M7 11.5h10M7 16h10"/></symbol>
+  <symbol id="i-brush" viewBox="0 0 24 24"><path d="M14.5 4.5 19.5 9.5 11 18l-5-5z"/><path d="M6 13c-2 0-3 1.5-3 3.5V20h3.5C8.5 20 10 19 10 17"/></symbol>
   <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22z"/><path d="M4 5.5V22M8 7h8M8 11h8"/></symbol>
 </svg>
 
@@ -325,6 +336,8 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stro
           <button class="tile" data-act="image"><svg class="i"><use href="#i-image"/></svg>From image</button>
           <button class="tile" data-act="save"><svg class="i"><use href="#i-heart"/></svg>Save</button>
           <button class="tile" data-act="saved"><svg class="i"><use href="#i-list"/></svg>Saved</button>
+          <button class="tile" data-act="sheet"><svg class="i"><use href="#i-sheet"/></svg>Sheet PNG</button>
+          <button class="tile" data-act="tryon"><svg class="i"><use href="#i-brush"/></svg>Try on image</button>
           <button class="tile" data-act="export"><svg class="i"><use href="#i-export"/></svg>Export</button>
           <button class="tile" data-act="snap"><svg class="i"><use href="#i-camera"/></svg>Snapshot</button>
           <button class="tile" data-act="details"><svg class="i"><use href="#i-contrast"/></svg>Contrast</button>
@@ -334,7 +347,7 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stro
         </div>
       </div>
 
-      <div class="pane" id="pane-saved"><div class="lib" id="lib"></div></div>
+      <div class="pane" id="pane-saved"><div class="libBar"><button class="btn primary" id="sheetPng">Sheet PNG</button><button class="btn" id="sheetLoad">Load sheet</button><small id="libNote"></small></div><div class="lib" id="lib"></div></div>
 
       <div class="pane" id="pane-export">
         <div class="btnRow"><button class="btn" id="copyCSS">Copy CSS</button><button class="btn" id="copyHex">Copy HEX</button><button class="btn" id="exportCSS">CSS file</button></div>
@@ -393,14 +406,16 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 </div>
 
 <input id="imageFile" type="file" accept="image/*">
+<input id="sheetFile" type="file" accept="image/*">
+<input id="tryFile" type="file" accept="image/*">
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<div class="shot" id="shot"><img id="shotImg" alt="Palette snapshot"><p>Long-press to save · tap outside to close</p></div>
+<div class="shot" id="shot"><img id="shotImg" alt="Palette snapshot"><p>Long-press to save · tap outside to close</p><button class="btn" id="shotShare" hidden>Save as file</button></div>
 
 <script>
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
-const TAU=Math.PI*2,CMAX=.32,MINN=2,MAXN=10;
+const TAU=Math.PI*2,CMAX=.32,MINN=1,MAXN=10;
 const STORE='chroma.v9.state',OLDSTORE='chroma.v7.state',LIB='chroma.v7.library',UI='chroma.v9.ui';
 const controls=['tension','spacing','tone','chroma','temperature','interval','splitAngle'];
 const profileControls=['lightProfile','chromaProfile','composition'];
@@ -587,10 +602,37 @@ function makeBar(i){
   b.innerHTML='<div class="tx"><span class="hx"></span><span class="meta"></span></div><span class="ep"></span><div class="icons"><button class="ic cp" aria-label="Copy HEX">'+svg('copy')+'</button><button class="ic lk"></button></div>';
   b.querySelector('.cp').addEventListener('click',e=>{e.stopPropagation();copyText(colors[i].hex,'Copied '+colors[i].hex);});
   b.querySelector('.lk').addEventListener('click',e=>{e.stopPropagation();toggleLock(i);});
-  b.addEventListener('click',()=>tapBar(i));
+  b.addEventListener('click',()=>{if(performance.now()-dragEnded<150)return;tapBar(i);});
+  b.addEventListener('pointerdown',e=>{
+    if(e.target.closest('.ic')||e.button>0)return;
+    const st={i,x:e.clientX,y:e.clientY,live:false,timer:0};
+    st.timer=setTimeout(()=>{if(drag!==st)return;st.live=true;active=st.i;$('palette').classList.add('dragging');renderPalette();},380);
+    drag=st;
+  });
   b.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();tapBar(i);}});
   return b;
 }
+/* long-press a swatch, then drag it to a new slot */
+let drag=null,dragEnded=0;
+function barAt(x,y){const bars=$('palette').children;for(let k=0;k<bars.length;k++){const r=bars[k].getBoundingClientRect();if(x>=r.left&&x<r.right&&y>=r.top&&y<r.bottom)return k;}return -1;}
+function remap(idx,from,to){if(idx<0)return idx;if(idx===from)return to;if(from<idx&&idx<=to)return idx-1;if(to<=idx&&idx<from)return idx+1;return idx;}
+function moveColor(from,to){
+  const c=colors.splice(from,1)[0];colors.splice(to,0,c);
+  anchor=remap(anchor,from,to);betweenPickA=remap(betweenPickA,from,to);betweenPickB=remap(betweenPickB,from,to);active=to;
+}
+addEventListener('pointermove',e=>{
+  if(!drag)return;
+  if(!drag.live){if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>10){clearTimeout(drag.timer);drag=null;}return;}
+  e.preventDefault();const k=barAt(e.clientX,e.clientY);
+  if(k>=0&&k!==drag.i){moveColor(drag.i,k);drag.i=k;renderPalette();}
+},{passive:false});
+function dropDrag(){
+  if(!drag)return;clearTimeout(drag.timer);
+  if(drag.live){dragEnded=performance.now();active=drag.i;drag=null;$('palette').classList.remove('dragging');render();}
+  else drag=null;
+}
+addEventListener('pointerup',dropDrag);addEventListener('pointercancel',dropDrag);
+$('palette').addEventListener('contextmenu',e=>e.preventDefault());
 function tapBar(i){
   if(mode==='between'&&betweenPicking){chooseBetweenEndpoint(i);return;}
   if(i===active&&sheetPane==='color'){closeSheet();return;}
@@ -633,7 +675,7 @@ function renderPalette(){
       if(betweenPicking){if(i===betweenPickA)ep='A';else if(i===betweenPickB)ep='B';}
       else if(betweenA&&betweenB){if(i===0)ep='A';else if(i===n-1)ep='B';}
     }
-    b.className='bar'+(i===active?' active':'')+(ep==='A'?' endpoint-start':ep==='B'?' endpoint-end':'');
+    b.className='bar'+(i===active?' active':'')+(drag&&drag.live&&drag.i===i?' lifted':'')+(ep==='A'?' endpoint-start':ep==='B'?' endpoint-end':'');
     b.querySelector('.ep').textContent=ep;
     b.style.setProperty('--c',c.hex);b.style.setProperty('--k',inkFor(c.hex));
     b.querySelector('.hx').textContent=c.hex.slice(1);
@@ -717,7 +759,7 @@ function addBelow(){
   setCount(colors.length);active=at;render();toast('Color added');
 }
 function removeAt(i){
-  if(colors.length<=MINN){toast('At least '+MINN+' colors');return;}
+  if(colors.length<=MINN){toast('At least one color');return;}
   if(i<0||i>=colors.length)return;
   colors.splice(i,1);
   if(anchor===i)anchor=-1;else if(anchor>i)anchor--;
@@ -1101,41 +1143,195 @@ $('redo').addEventListener('click',()=>{flushSave();if(hIdx<hist.length-1){hIdx+
 /* ================= saved palettes ================= */
 function loadLib(){try{const l=JSON.parse(localStorage.getItem(LIB)||'[]');return Array.isArray(l)?l.filter(p=>p&&Array.isArray(p.hexes)&&p.hexes.length>=MINN&&p.hexes.length<=MAXN&&p.hexes.every(hexToRgb)):[];}catch(e){return [];}}
 function storeLib(lib){try{localStorage.setItem(LIB,JSON.stringify(lib));return true;}catch(e){toast('Storage unavailable here');return false;}}
+// where the current palette came from: a tiny thumbnail of the source image, kept with saved palettes
+let srcThumb=null;
+function makeThumb(src){
+  try{const m=72,w=src.width,h=src.height,k=m/Math.max(w,h),c=document.createElement('canvas');c.width=Math.max(1,Math.round(w*k));c.height=Math.max(1,Math.round(h*k));
+    c.getContext('2d').drawImage(src,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.72);}catch(e){return null;}
+}
 function savePalette(){
   const lib=loadLib(),hexes=colors.map(c=>c.hex);
   if(lib.some(p=>p.hexes.join()===hexes.join())){toast('Already saved');return;}
-  lib.unshift({hexes,mode,between:mode==='between'&&betweenA&&betweenB?{a:betweenA.hex,b:betweenB.hex}:null,t:Date.now()});if(lib.length>80)lib.length=80;if(storeLib(lib))toast('Saved');
+  const t=Date.now();
+  lib.unshift({hexes,mode,between:mode==='between'&&betweenA&&betweenB?{a:betweenA.hex,b:betweenB.hex}:null,t,src:srcThumb||null});if(lib.length>LIBMAX)lib.length=LIBMAX;
+  if(storeLib(lib)){ if(sheetPick)sheetPick.add(t); toast('Saved'); }
+}
+/* the sheet: saved palettes stacked edge to edge. null = automatic, all of them */
+const LIBMAX=100;
+let sheetPick=null;
+function sheetEntries(lib){return (sheetPick?lib.filter(p=>sheetPick.has(p.t)):lib).slice(0,LIBMAX);}
+function loadEntry(p){
+  colors=p.hexes.map(h=>({...parseColor(h),locked:false}));setCount(colors.length);
+  if(MODE_NAMES[p.mode])setMode(p.mode);
+  if(p.mode==='between'&&p.between&&hexToRgb(p.between.a)&&hexToRgb(p.between.b)){
+    betweenA={hex:rgbToHex(hexToRgb(p.between.a))};betweenB={hex:rgbToHex(hexToRgb(p.between.b))};betweenPicking=false;betweenPickA=-1;betweenPickB=-1;
+  }else if(p.mode==='between'){
+    betweenA=null;betweenB=null;betweenPickA=-1;betweenPickB=-1;betweenPicking=true;
+  }
+  srcThumb=p.src||null;active=0;anchor=-1;render();toast('Loaded');
 }
 function renderLib(){
   const lib=loadLib(),root=$('lib');root.innerHTML='';
-  if(!lib.length){root.innerHTML='<p class="note">Nothing saved yet — use Save in the More menu.</p>';return;}
+  if(sheetPick)for(const t of [...sheetPick])if(!lib.some(p=>p.t===t))sheetPick.delete(t);
+  const onSheet=new Set(sheetEntries(lib).map(p=>p.t));
+  $('libNote').textContent=lib.length?(onSheet.size+' of '+lib.length+' on the sheet'+(sheetPick?' · your pick':' · all saved')+' · untick to leave one off · keeps up to '+LIBMAX):'';
+  $('sheetPng').disabled=!lib.length;
+  if(!lib.length){root.innerHTML='<p class="note">Nothing saved yet — use Save in the More menu. Load sheet brings palettes back from a Sheet PNG.</p>';return;}
   lib.forEach(p=>{
     const row=document.createElement('div');row.className='libRow';
+    const chk=document.createElement('button');chk.className='libChk'+(onSheet.has(p.t)?' on':'');chk.textContent='✓';chk.setAttribute('aria-label','On the sheet');
+    chk.addEventListener('click',()=>{
+      const cur=loadLib(); if(!sheetPick)sheetPick=new Set(sheetEntries(cur).map(q=>q.t));
+      if(sheetPick.has(p.t))sheetPick.delete(p.t); else sheetPick.add(p.t);
+      renderLib();
+    });
     const strip=document.createElement('button');strip.className='libStrip';strip.setAttribute('aria-label','Load '+p.hexes.join(' '));
     p.hexes.forEach(h=>{const s=document.createElement('span');s.style.background=h;strip.appendChild(s);});
-    strip.addEventListener('click',()=>{
-      colors=p.hexes.map(h=>({...parseColor(h),locked:false}));setCount(colors.length);
-      if(MODE_NAMES[p.mode])setMode(p.mode);
-      if(p.mode==='between'&&p.between&&hexToRgb(p.between.a)&&hexToRgb(p.between.b)){
-        betweenA={hex:rgbToHex(hexToRgb(p.between.a))};betweenB={hex:rgbToHex(hexToRgb(p.between.b))};betweenPicking=false;betweenPickA=-1;betweenPickB=-1;
-      }else if(p.mode==='between'){
-        betweenA=null;betweenB=null;betweenPickA=-1;betweenPickB=-1;betweenPicking=true;
-      }
-      active=0;anchor=-1;render();toast('Loaded');
-    });
+    strip.addEventListener('click',()=>loadEntry(p));
+    row.append(chk);
+    if(p.src){const im=document.createElement('img');im.className='libThumb';im.src=p.src;im.alt='';row.append(im);}
     const del=document.createElement('button');del.className='libDel';del.textContent='Delete';let armT=null;
     del.addEventListener('click',()=>{if(!del.classList.contains('armed')){del.classList.add('armed');del.textContent='Sure?';armT=setTimeout(()=>{del.classList.remove('armed');del.textContent='Delete';},2500);return;}clearTimeout(armT);if(storeLib(loadLib().filter(q=>!(q.t===p.t&&q.hexes.join()===p.hexes.join()))))renderLib();});
     row.append(strip,del);root.appendChild(row);
   });
 }
 
+/* ================= sheet PNG — every saved palette, edge to edge, like the snapshot =================
+   up to 30 palettes: one column of tall rows. More: two columns of shorter rows (100 → 1200×3000).
+   The palettes also ride inside the PNG (a 'chroma' text chunk); if that is stripped, Load sheet reads the bands. */
+const SHW=1200;
+function sheetLayout(n){return n<=30?{cols:1,rows:n,rowH:100}:{cols:2,rows:Math.ceil(n/2),rowH:60};}
+function imgFor(src){return new Promise(r=>{if(!src)return r(null);const im=new Image();im.onload=()=>r(im);im.onerror=()=>r(null);im.src=src;});}
+async function sheetCanvas(list){
+  const L=sheetLayout(list.length),cw=SHW/L.cols,cv=document.createElement('canvas');cv.width=SHW;cv.height=L.rows*L.rowH;
+  const g=cv.getContext('2d');g.fillStyle='#111316';g.fillRect(0,0,cv.width,cv.height);
+  list.forEach((p,idx)=>{
+    const col=Math.floor(idx/L.rows),row=idx%L.rows,x=col*cw,y=row*L.rowH,n=p.hexes.length,sw=cw/n;
+    p.hexes.forEach((hx,k)=>{
+      const x0=Math.round(x+k*sw),x1=Math.round(x+(k+1)*sw);
+      g.fillStyle=hx;g.fillRect(x0,y,x1-x0,L.rowH);
+      const fs=Math.min(L.rowH*.26,sw*.15,24);
+      if(fs>=8){g.fillStyle=inkFor(hx);g.font='600 '+fs.toFixed(1)+'px ui-monospace,Menlo,monospace';g.textBaseline='alphabetic';g.fillText(hx.slice(1),x0+fs*.6,y+L.rowH-fs*.55);}
+    });
+  });
+  return cv;
+}
+/* PNG text chunk */
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function b64ToBytes(s){const bin=atob(s),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u;}
+function bytesToB64(u){let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s);}
+function withText(png,key,text){
+  const body=new TextEncoder().encode(key+'\0'+text),type=new TextEncoder().encode('tEXt'),chunk=new Uint8Array(12+body.length),dv=new DataView(chunk.buffer);
+  dv.setUint32(0,body.length);chunk.set(type,4);chunk.set(body,8);
+  const ct=new Uint8Array(4+body.length);ct.set(type,0);ct.set(body,4);dv.setUint32(8+body.length,crc32(ct));
+  const iend=png.length-12,out=new Uint8Array(png.length+chunk.length);out.set(png.subarray(0,iend),0);out.set(chunk,iend);out.set(png.subarray(iend),iend+chunk.length);return out;
+}
+function readText(u,key){
+  if(u.length<8||u[0]!==0x89||u[1]!==0x50)return null;
+  const dv=new DataView(u.buffer,u.byteOffset,u.byteLength);let o=8;
+  while(o+12<=u.length){const len=dv.getUint32(o),type=String.fromCharCode(u[o+4],u[o+5],u[o+6],u[o+7]);
+    if(type==='tEXt'){const body=u.subarray(o+8,o+8+len),z=body.indexOf(0);if(z>0&&new TextDecoder().decode(body.subarray(0,z))===key)return new TextDecoder().decode(body.subarray(z+1));}
+    if(type==='IEND')break;o+=12+len;}
+  return null;
+}
+let shotBlob=null,shotName='chroma.png';
+function showShot(bytes,name){
+  shotBlob=new Blob([bytes],{type:'image/png'});shotName=name;
+  $('shotImg').src='data:image/png;base64,'+bytesToB64(bytes);
+  let can=false;try{can=!!(navigator.canShare&&navigator.canShare({files:[new File([shotBlob],name,{type:'image/png'})]}));}catch(e){}
+  $('shotShare').hidden=!can;$('shot').classList.add('show');
+}
+$('shotShare').addEventListener('click',async e=>{e.stopPropagation();try{await navigator.share({files:[new File([shotBlob],shotName,{type:'image/png'})]});}catch(err){}});
+async function makeSheet(){
+  const lib=loadLib(),list=sheetEntries(lib);if(!list.length){toast('Save a palette first');return;}
+  closeSheet();toast('Building sheet of '+list.length+'…');
+  const cv=await sheetCanvas(list);
+  const data=JSON.stringify({v:1,app:'chroma',palettes:list.map(p=>({hexes:p.hexes,mode:p.mode,t:p.t,between:p.between||null,src:p.src||null}))});
+  showShot(withText(b64ToBytes(cv.toDataURL('image/png').split(',')[1]),'chroma',data),'chroma-sheet.png');
+}
+/* read palettes back: text chunk first, then the swatch bands themselves */
+function scanLine(g,x0,x1,y){
+  const d=g.getImageData(x0,y,x1-x0,1).data,px=i=>[d[i*4],d[i*4+1],d[i*4+2]];
+  const same=(a,b)=>Math.abs(a[0]-b[0])<=16&&Math.abs(a[1]-b[1])<=16&&Math.abs(a[2]-b[2])<=16,minRun=Math.max(3,(x1-x0)/(MAXN*2.4)),runs=[];let st=0;
+  for(let i=1;i<=x1-x0;i++){if(i===x1-x0||!same(px(i),px(st))){if(i-st>=minRun)runs.push(px((st+i)>>1));st=i;}}
+  return runs;
+}
+function scanRows(g,w,h,L){
+  // a row only counts if two lines through its upper half agree — a wrong guess at the layout straddles rows
+  const s=w/SHW,cw=w/L.cols,rh=L.rowH*s,out=[];let good=0,cells=0;
+  for(let c=0;c<L.cols;c++)for(let r=0;r<L.rows;r++){
+    const x0=Math.round(c*cw)+1,x1=Math.round((c+1)*cw)-1,ya=Math.min(h-1,Math.round(r*rh+rh*.12)),yb=Math.min(h-1,Math.round(r*rh+rh*.42));
+    const A=scanLine(g,x0,x1,ya),B=scanLine(g,x0,x1,yb);
+    const agree=A.length===B.length&&A.every((p,i)=>Math.abs(p[0]-B[i][0])<=20&&Math.abs(p[1]-B[i][1])<=20&&Math.abs(p[2]-B[i][2])<=20);
+    if(A.length===1&&agree&&c===L.cols-1&&r===L.rows-1)continue;   // the empty filler cell
+    cells++;
+    if(agree&&A.length>=MINN&&A.length<=MAXN){good++;out.push({hexes:A.map(p=>rgbToHex(p.map(v=>v/255))),mode:'free',t:Date.now()-(c*L.rows+r)});}
+  }
+  return {out,score:cells?good/cells:0};
+}
+function scanSheet(img){
+  const w=img.naturalWidth,h=img.naturalHeight,a=h/w*SHW;
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;const g=cv.getContext('2d',{willReadFrequently:true});g.drawImage(img,0,0);
+  let best=null;
+  for(const L of [{cols:1,rowH:100},{cols:2,rowH:60}]){
+    const rows=Math.round(a/L.rowH);if(rows<1||Math.abs(rows*L.rowH-a)>Math.max(2,a*.01))continue;
+    if(L.cols===1&&rows>30||L.cols===2&&rows<16)continue;
+    const res=scanRows(g,w,h,{...L,rows});
+    if(!best||res.score>best.score)best=res;
+  }
+  return best&&best.score>.5?best.out:[];
+}
+async function loadSheetFile(file){
+  try{
+    const u=new Uint8Array(await file.arrayBuffer());let list=null,exact=true;
+    const txt=readText(u,'chroma');
+    if(txt){try{const j=JSON.parse(txt);if(j&&Array.isArray(j.palettes))list=j.palettes;}catch(e){}}
+    if(!list){exact=false;const url=URL.createObjectURL(file);const im=await imgFor(url);URL.revokeObjectURL(url);list=im?scanSheet(im):[];}
+    list=list.filter(p=>p&&Array.isArray(p.hexes)&&p.hexes.length>=MINN&&p.hexes.length<=MAXN&&p.hexes.every(hexToRgb)).map(p=>({...p,hexes:p.hexes.map(h=>rgbToHex(hexToRgb(h)))}));
+    if(!list.length){toast('No palettes found in that image');return;}
+    const lib=loadLib();let added=0;
+    for(const p of list){if(lib.some(q=>q.hexes.join()===p.hexes.join()))continue;lib.push({hexes:p.hexes,mode:MODE_NAMES[p.mode]?p.mode:'free',between:p.between||null,t:p.t||Date.now(),src:typeof p.src==='string'&&p.src.startsWith('data:image/')?p.src:null});added++;}
+    lib.sort((a,b)=>b.t-a.t);if(lib.length>LIBMAX)lib.length=LIBMAX;
+    if(storeLib(lib)){renderLib();toast(added?('Added '+added+(exact?'':' (read from the swatches)')):'All already saved');}
+  }catch(e){toast('Could not read that image');}
+}
+$('sheetPng').addEventListener('click',makeSheet);
+$('sheetLoad').addEventListener('click',()=>$('sheetFile').click());
+$('sheetFile').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(f)loadSheetFile(f);});
+
+/* ================= try on image — the palette laid over a picture by its light =================
+   Darkest colour takes the shadows, lightest the highlights, blended in OKLab between them. */
+function tryOnCanvas(src){
+  const k=Math.min(1,1400/Math.max(src.width,src.height)),w=Math.round(src.width*k),h=Math.round(src.height*k),strip=Math.round(w*.06);
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h+strip;const g=cv.getContext('2d',{willReadFrequently:true});
+  g.drawImage(src,0,0,w,h);const id=g.getImageData(0,0,w,h),d=id.data;
+  let stops=colors.map(c=>rgbToOklab(hexToRgb(c.hex))).sort((a,b)=>a[0]-b[0]);
+  if(stops.length===1){const o=stops[0];stops=[[.12,o[1]*.5,o[2]*.5],o,[.97,o[1]*.25,o[2]*.25]];}
+  const n=stops.length,lut=new Uint8ClampedArray(256*3);
+  for(let i=0;i<256;i++){const x=i/255*(n-1),a=Math.min(n-2,Math.floor(x)),f=x-a,A=stops[a],B=stops[a+1];
+    const rgb=oklabToRgb(A[0]+(B[0]-A[0])*f,A[1]+(B[1]-A[1])*f,A[2]+(B[2]-A[2])*f);for(let c=0;c<3;c++)lut[i*3+c]=Math.round(clamp(rgb[c],0,1)*255);}
+  // luminance → rank, so the full palette is used whatever the picture's exposure
+  const hist=new Uint32Array(256),Y=new Uint8Array(w*h);
+  for(let i=0,p=0;i<d.length;i+=4,p++){const y=Math.round(.2126*d[i]+.7152*d[i+1]+.0722*d[i+2]);Y[p]=y;hist[y]++;}
+  const cdf=new Uint8Array(256);let acc=0;for(let i=0;i<256;i++){acc+=hist[i];cdf[i]=Math.round((acc-hist[i]/2)/(w*h)*255);}
+  for(let i=0,p=0;i<d.length;i+=4,p++){const v=cdf[Y[p]]*3;d[i]=lut[v];d[i+1]=lut[v+1];d[i+2]=lut[v+2];}
+  g.putImageData(id,0,0);
+  const sw=w/colors.length;colors.forEach((c,i)=>{g.fillStyle=c.hex;g.fillRect(Math.floor(i*sw),h,Math.ceil(sw)+1,strip);});
+  return cv;
+}
+function tryOn(src){closeSheet();const cv=tryOnCanvas(src);showShot(b64ToBytes(cv.toDataURL('image/png').split(',')[1]),'chroma-try-on.png');}
+$('tryFile').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(!f)return;const url=URL.createObjectURL(f),im=new Image();
+  im.onload=()=>{const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;c.getContext('2d').drawImage(im,0,0);URL.revokeObjectURL(url);tryOn(c);};
+  im.onerror=()=>{URL.revokeObjectURL(url);toast('Could not open that image');};im.src=url;});
+
 /* ================= snapshot (long-press save overlay) ================= */
 function snapshot(){
   const W=1080,H=1350,n=colors.length,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d'),bh=H/n;
   colors.forEach((c,i)=>{g.fillStyle=c.hex;g.fillRect(0,Math.floor(i*bh),W,Math.ceil(bh)+1);g.fillStyle=inkFor(c.hex);g.font='600 '+Math.min(54,bh*.36)+'px -apple-system,Helvetica,sans-serif';g.textBaseline='middle';g.fillText(c.hex.slice(1),72,i*bh+bh/2);});
-  $('shotImg').src=cv.toDataURL('image/png');$('shot').classList.add('show');
+  showShot(b64ToBytes(cv.toDataURL('image/png').split(',')[1]),'chroma-palette.png');
 }
-$('shot').addEventListener('click',()=>$('shot').classList.remove('show'));
+$('shot').addEventListener('click',e=>{if(e.target.id!=='shotImg'&&e.target.id!=='shotShare')$('shot').classList.remove('show');});
 
 /* ================= menu ================= */
 document.querySelectorAll('.tile').forEach(t=>t.addEventListener('click',()=>{
@@ -1143,6 +1339,8 @@ document.querySelectorAll('.tile').forEach(t=>t.addEventListener('click',()=>{
   if(a==='image')openPicker();
   else if(a==='save')savePalette();
   else if(a==='saved')openSheet('saved');
+  else if(a==='sheet')makeSheet();
+  else if(a==='tryon'){if(IMG.src)tryOn(IMG.src);else $('tryFile').click();}
   else if(a==='export')openSheet('export');
   else if(a==='details')openSheet('details');
   else if(a==='theory')openSheet('theory');
@@ -1155,7 +1353,7 @@ function saveUI(){try{localStorage.setItem(UI,JSON.stringify({dark:document.docu
 $('copyCSS').addEventListener('click',()=>copyText(cssText(),'CSS copied'));
 $('copyHex').addEventListener('click',()=>copyText(colors.map(c=>c.hex).join(', '),'HEX list copied'));
 $('exportCSS').addEventListener('click',()=>{const blob=new Blob([cssText()],{type:'text/css'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='chroma-palette.css';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);});
-$('generate').addEventListener('click',()=>{generate(true);});
+$('generate').addEventListener('click',()=>{srcThumb=null;generate(true);});
 document.addEventListener('keydown',e=>{if(e.code==='Space'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&$('picker').hidden){e.preventDefault();generate(true);}});
 
 /* ================= image picker ================= */
@@ -1259,7 +1457,7 @@ function changePkCount(d){
 }
 $('pkUse').addEventListener('click',()=>{
   if(!IMG.pts.length)return;
-  colors=IMG.pts.map(p=>({...parseColor(p.hex),locked:false}));setCount(colors.length);active=0;anchor=-1;
+  colors=IMG.pts.map(p=>({...parseColor(p.hex),locked:false}));setCount(colors.length);active=0;anchor=-1;srcThumb=makeThumb(IMG.src);
   closePicker();render();toast('Palette from image');
 });
 function renderPicker(){
